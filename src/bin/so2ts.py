@@ -3,14 +3,28 @@
 
 # this python script try to convert a object file to a module for frida
 
-from packaging import version
-import pkg_resources  # part of setuptools
-
 import os
-import lief
-import argparse
-from jinja2 import Template
-from utils import *
+import sys
+
+try:
+    from packaging import version
+    import pkg_resources  # part of setuptools
+    import math
+    import lief
+    import argparse
+    from jinja2 import Template
+except ImportError:
+    print("you need to install math, packaging, lief, argparse and jinja2 library")
+    sys.exit(1)
+
+def getAlignNum(addr, align=0x10, shrink=False):
+    if shrink:
+        addr1 = int( math.floor(addr/align) *align)
+        return addr1
+    else:
+        addr1 = int( math.ceil(addr/align) *align)
+        return addr1
+
 
 def handle_ELF(info, binary, no_content=False):
     """

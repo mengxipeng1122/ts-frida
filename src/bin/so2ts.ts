@@ -1,6 +1,6 @@
-#!/usr/bin/env node
 
 import * as argparse from 'argparse';
+const { exec } = require('child_process');
 
 // Parse command line arguments
 const parser = new argparse.ArgumentParser({
@@ -10,7 +10,7 @@ parser.add_argument(
     '-b',
     '--binary',
     {
-        type: 'string',
+        type: 'str',
         required: true,
         help: 'path to the binary file',
     }
@@ -27,14 +27,14 @@ parser.add_argument(
     '-n',
     '--name',
     {
-        type: 'string',
+        type: 'str',
         help: 'set module name',
     }
 );
 parser.add_argument(
     '--no-content',
     {
-        action: 'storeTrue',
+        action: 'store_true',
         default: false,
         help: 'flag to exclude content',
     }
@@ -42,5 +42,19 @@ parser.add_argument(
 
 const args = parser.parse_args();
 
-// Print command line arguments
-console.log(args);
+const cmd = `${__dirname}/so2ts.py -b ${args.binary} -o ${args.output} ${args.name ? `--name ${args.name}` : ''} ${args.no_content ? '--no-content' : ''}`
+console.log(`cmd: ${cmd}`);
+
+exec(cmd, (error: { message: any; }, stdout: any, stderr: any) => {
+    if (error) {
+        console.error(`error: ${error.message}`);
+        return;
+    }
+    if (stderr) {
+        console.error(`stderr: ${stderr}`);
+        return;
+    }
+    console.log(`stdout: ${stdout}`);
+});
+
+

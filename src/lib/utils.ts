@@ -290,3 +290,171 @@ export const showBacktrace = (thiz: InvocationContext, sobase?: NativePointer, t
 }
 
 
+
+/**
+ * The base data type for module information.
+ *
+ * Represents information about a module.
+ * Contains the name of the module, the base address, the cave address, the symbols, the hook ids, the functions, and the variables.
+ */
+export type MODINFO_BASETYPE = {
+
+    /**
+     * The function to be called when the module is unloaded.
+     * This is an optional function.
+     */
+    unload? : ()=>void;
+
+    /**
+     * The name of the module.
+     */
+    name    : string, 
+
+    /**
+     * The base address of the module.
+     */
+    base    : NativePointer,
+
+    /**
+     * The cave address of the module.
+     * This is an optional field.
+     */
+    cave?   : NativePointer,
+
+    /**
+     * The symbols of the module.
+     * Each symbol is a key-value pair, where the key is the symbol name and the value is the symbol address.
+     */
+    symbols : {[key:string]:NativePointer},
+
+    /**
+     * The hook ids of the module.
+     * Each hook id is a key-value pair, where the key is the hook id name and the value is the hook id value or null.
+     */
+    hookids : {[key:string]:null | InvocationListener},
+
+    /**
+     * The functions of the module.
+     * Each function is a key-value pair, where the key is the function name and the value is an object containing the hook, unhook, and call functions.
+     */
+    functions : {[key:string]:{
+
+        /**
+         * The hook function of the module.
+         */
+        hook:Function,
+
+        /**
+         * The unhook function of the module.
+         */
+        unhook:Function,
+
+        /**
+         * The call function of the module.
+         */
+        call:Function,
+
+    }},
+
+    /**
+     * The variables of the module.
+     * This is an empty object.
+     */
+    variables : {[key:string]:{
+
+    }},
+
+};
+
+
+/**
+ * Resolves a symbol in one or more libraries.
+ *
+ * @param {string} name - The name of the symbol to resolve.
+ * @param {(MODINFO_BASETYPE | string)[]} libraries - An array of libraries to search for the symbol.
+ * @param {{[key: string]: NativePointer}} [symbols] - An optional object containing already resolved symbols.
+ * @param {{useFindSymbols?: boolean}} [opts] - An optional object containing options.
+ * @param {boolean} [opts.useFindSymbols] - A flag indicating whether to use the Module.enumerateSymbols() method to find the symbol.
+ * @throws {Error} - Throws an error if the symbol cannot be resolved.
+ * @return {NativePointer} - The resolved symbol address.
+ */
+export const resolveSymbol = (
+    name: string, 
+    libraries: (MODINFO_BASETYPE | string)[], 
+    symbols?: {[key: string]: NativePointer},
+    opts?: {useFindSymbols?:boolean},
+): NativePointer => {
+
+    // Set the useFindSymbols flag to the value in opts or false.
+    const useFindSymbols = opts?.useFindSymbols || false;
+
+    // Check if the symbol is already resolved.
+    if (symbols && symbols[name]) {
+        return symbols[name];
+    }
+
+    // Iterate over the libraries.
+    for (const lib of libraries) {
+        // If the library is a string, search for the symbol in the module.
+        if (typeof lib === 'string') {
+            const module = Process.getModuleByName(lib);
+            const exportAddress = Module.findExportByName(lib, name) ||
+                module.enumerateExports().find(e => e.name === name)?.address ||
+                (useFindSymbols && module.enumerateSymbols().find(e => e.name === name)?.address);
+            if (exportAddress) {
+                return exportAddress;
+            }
+        } else {
+            // If the library is an object, check if the symbol is in the symbols object.
+            const exportByName = Module.findExportByName(lib.name, name);
+            if (exportByName) {
+                return exportByName;
+            }
+            if (lib.symbols[name]) {
+                return lib.symbols[name];
+            }
+        }
+    }
+
+    // If the symbol is not found in any library, search for it in the null module.
+    const exportByNameNull = Module.findExportByName(null, name);
+    if (exportByNameNull) {
+        return exportByNameNull;
+    }
+
+    // If the symbol cannot be resolved, throw an error.
+    throw new Error(`Unable to resolve symbol ${name}`);
+};
+
+export function readFileData(fpath: string, sz: number, offset: number = 0): ArrayBuffer {
+    if (sz <= 0) {
+        return new ArrayBuffer(0);
+    }
+    const platform = Process.platform;
+    if (platform === 'linux' || platform === 'windows') {
+        const fopen = new NativeFunction(Module.getExportByName(null, 'fopen'), 'pointer', ['pointer', 'pointer']);
+        const fseek = new NativeFunction(Module.getExportByName(null, 'fseek'), 'int', ['pointer', 'long', 'int']);
+        const fclose = new NativeFunction(Module.getExportByName(null, 'fclose'), 'int', ['pointer']);
+        const fread = new NativeFunction(Module.getExportByName(null, 'fread'), 'size_t', ['pointer', 'size_t', 'size_t', 'pointer']);
+        const buf = Memory.alloc(sz);
+        const SEEK_SET = 0;
+
+        const fp = fopen(Memory.allocUtf8String(fpath), Memory.allocUtf8String('rb'));
+        if (fp.isNull()) {
+            throw new Error(`open ${fpath} failed`);
+        }
+        fseek(fp, offset, SEEK_SET);
+        const read = fread(buf, 1, sz, fp);
+        if (read.toNumber() !== sz) {
+            console.log(`error at read file ${fpath}, ${read}/${sz}`);
+        }
+        const ab = buf.readByteArray(sz);
+        if (ab === null) {
+            throw new Error(`read byte array failed when read file ${fpath}`);
+        }
+        fclose(fp);
+        return ab;
+    } else {
+        throw new Error(`unhandled platform ${platform}`);
+    }
+}
