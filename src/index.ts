@@ -1,5 +1,5 @@
 
-export * from './lib/utils.js'
-export * from './lib/ELF.js'
-export * from './lib/NativeHooker.js'
+export * from './lib/utils'
+export * from './lib/ELF'
+export * from './lib/NativeHooker'
 

@@ -5,11 +5,11 @@ const replace = require('gulp-replace');
 const rename = require('gulp-rename');
 
 gulp.task('rename', function(){
-  return gulp.src('dist/**/*.js')  // This will get all .js files in src and its sub-directories
+  return gulp.src('dist/bin/*.js')  // This will get all .js files in src and its sub-directories
     .pipe(rename(function(path) {
       path.extname = ".cjs";
     }))
-    .pipe(gulp.dest('dist'));  // Output the renamed files in the same directory
+    .pipe(gulp.dest('dist')); // Output the renamed files in the same directory
 });
 
 // Compile TypeScript files
@@ -23,7 +23,7 @@ gulp.task('compile', () => {
 // Add shebang to scripts and output to dist/bin
 gulp.task('scripts', () => {
     return gulp.src('dist/bin/*.js')
-        .pipe(replace(/^/, '#!/usr/bin/env node'))
+        .pipe(replace(/^/, '#!/usr/bin/env node\n'))
         .pipe(gulp.dest('dist/bin'));
 });
 
@@ -41,5 +41,5 @@ gulp.task('copyFiles', function(){
 
 
 // Default task
-gulp.task('default', gulp.series('compile', 'scripts', 'rename', 'copyFiles'));
+gulp.task('default', gulp.series());
 
