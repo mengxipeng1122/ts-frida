@@ -1,4 +1,5 @@
 
 all:
-	npx tsc
-	#gulp
+	rm -fr ./dist
+	gulp
+	npm pack

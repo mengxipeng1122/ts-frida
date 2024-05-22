@@ -40,6 +40,24 @@ gulp.task('copyFiles', function(){
 });
 
 
-// Default task
-gulp.task('default', gulp.series());
+// Define array of objects for the directories to copy
+const directoriesToMove = [
+  { source: './src/templates/**/*', destination: './dist/templates/' },
+  { source: './src/nativeLib/**/*', destination: './dist/nativeLib/' },
+  // Add more directories as needed
+];
+
+// `copyDirectories` task
+gulp.task('copyDirectories', done => {
+  // Use each directory pair defined in directoriesToMove
+  directoriesToMove.forEach(dir => {
+    gulp.src(dir.source, { base: dir.source.replace('/**/*', '') })
+      .pipe(gulp.dest(dir.destination));
+  });
+
+  // Signal completion of the task
+  done();
+});
+
+gulp.task('default', gulp.series('compile',  'copyFiles', 'copyDirectories', ));
 
