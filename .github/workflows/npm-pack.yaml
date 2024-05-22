@@ -44,7 +44,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This is the endpoint where asset uploads are sent
-        asset_path: ./ts-frida-0.1.0.tgz # This is the path to the file you want to upload
-        asset_name: ts-frida-0.1.0.tgz # This is the name the file will get in the release
+        asset_path: ./ts-frida-1.0.0.tgz # This is the path to the file you want to upload
+        asset_name: ts-frida-1.0.0.tgz # This is the name the file will get in the release
         asset_content_type: application/gzip
 
