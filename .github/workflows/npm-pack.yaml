@@ -3,7 +3,7 @@ name: Create Release and Publish npm pack
 on:
   push:
     branches:
-      - main # or the branch you wish to trigger the workflow on
+      - master # or the branch you wish to trigger the workflow on
 
 jobs:
   build:
