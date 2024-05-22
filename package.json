@@ -9,7 +9,7 @@
     "so2ts": "./dist/scripts/so2ts.cjs"
   },
   "scripts": {
-    "build": "npx tsc && copyfiles -u 1 src/scripts//so2ts.py dist && copyfiles -u 1 src/scripts//so2ts.jinja dist",
+    "build": "npx gulp",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
