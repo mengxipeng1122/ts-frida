@@ -1,0 +1,48 @@
+name: Create Release and Publish npm pack
+
+on:
+  push:
+    branches:
+      - main # or the branch you wish to trigger the workflow on
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16' # specify the Node.js version you want
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run npm pack
+      run: npm pack
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # this token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This is the endpoint where asset uploads are sent
+        asset_path: ./ts-frida-0.1.0.tgz # This is the path to the file you want to upload
+        asset_name: ts-frida-0.1.0.tgz # This is the name the file will get in the release
+        asset_content_type: application/gzip
+
