@@ -1,3 +1,4 @@
 
 all:
+	npx tsc
 	#gulp
