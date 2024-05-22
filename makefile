@@ -1,5 +1,5 @@
 
 all:
 	rm -fr ./dist
-	gulp
+	npx gulp
 	npm pack
