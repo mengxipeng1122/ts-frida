@@ -27,9 +27,10 @@ jobs:
       run: npm run build
 
     - name: Get the version tag for the release
-      id: get_version
-      run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
-
+      id: get_tag
+      run: echo "tag=$(echo ${GITHUB_REF#refs/tags/})" >> $GITHUB_ENV
+      shell: bash 
+      
     - name: Run npm pack
       run: |
         npm pack
@@ -38,13 +39,17 @@ jobs:
         
     - name: Find the package file
       id: find_package_file
-      run: echo "::set-output name=PACKAGE_FILE::$(ls ts-frida-*.tgz)"
+      run: |
+        PACKAGE_FILE=$(ls ts-frida-*.tgz)
+        echo "PACKAGE_FILE=$PACKAGE_FILE" >> $GITHUB_ENV
+      shell: bash
     
     - name: Rename the npm package
       run: |
-        echo "mv ${{ steps.find_package_file.outputs.PACKAGE_FILE }} ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz"
-        mv ${{ steps.find_package_file.outputs.PACKAGE_FILE }} ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
-    
+         echo mv "$PACKAGE_FILE" "ts-frida-$tag.tgz"
+         mv "$PACKAGE_FILE" "ts-frida-$tag.tgz"
+      shell: bash
+      
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
