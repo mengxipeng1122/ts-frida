@@ -23,3 +23,5 @@ LOG_INFOS_WITH_N(N, "[%s:%d] " fmt , __FILE__, __LINE__,  ##args);
 int check_folder_exist(const char *folder_path) ;
 int make_folder(const char *folder_path) ;
 int delete_and_remake_folder(const char *folder_path) ;
+int create_dir_recursively(const char *dir) ;
+int write_bytes_to_file(const char *file_path, const unsigned char *data, size_t data_size) ;

@@ -1413,6 +1413,15 @@ MINIZ_EXPORT void *mz_zip_extract_archive_file_to_heap(const char *pZip_filename
 MINIZ_EXPORT void *mz_zip_extract_archive_file_to_heap_v2(const char *pZip_filename, const char *pArchive_name, const char *pComment, size_t *pSize, mz_uint flags, mz_zip_error *pErr);
 #endif
 
+struct HandlerContext {
+    mz_zip_archive *zip_archive;
+    void* user_data;
+};
+
+MINIZ_EXPORT int enumerate_entries_in_zipfile(const char *zip_filename,
+                        int (*entry_handler)(const mz_zip_archive_file_stat *, void *),
+                        void *user_data) ;
+
 #endif /* #ifndef MINIZ_NO_ARCHIVE_WRITING_APIS */
 
 #ifdef __cplusplus

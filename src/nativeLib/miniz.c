@@ -7826,6 +7826,52 @@ mz_bool mz_zip_end(mz_zip_archive *pZip)
     return MZ_FALSE;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// add some util functions
+int 
+enumerate_entries_in_zipfile(const char *zip_filename,
+                        int (*entry_handler)(const mz_zip_archive_file_stat *, void *),
+                        void *user_data) {
+    mz_zip_archive zip_archive;
+    mz_uint num_entries, i;
+    mz_zip_archive_file_stat file_stat;
+
+    memset(&zip_archive, 0, sizeof(zip_archive));
+
+    if (!mz_zip_reader_init_file(&zip_archive, zip_filename, 0)) {
+        return -1;
+    }
+
+    struct HandlerContext handlerContext;
+    handlerContext.zip_archive = &zip_archive;
+    handlerContext.user_data   = user_data;
+
+    num_entries = mz_zip_reader_get_num_files(&zip_archive);
+
+    for (i = 0; i < num_entries; i++) {
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) {
+            mz_zip_reader_end(&zip_archive);
+            return -1;
+        }
+
+        if (entry_handler != NULL) {
+            int result = entry_handler(&file_stat, &handlerContext);
+            if (result != 0) {
+                mz_zip_reader_end(&zip_archive);
+                return result;
+            }
+        }
+    }
+
+    mz_zip_reader_end(&zip_archive);
+
+    return num_entries;
+}
+
+
+
+
+
 #ifdef __cplusplus
 }
 #endif
