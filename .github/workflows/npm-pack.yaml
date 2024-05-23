@@ -31,7 +31,7 @@ jobs:
       run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
 
     - name: Run npm pack
-      run: 
+      run: |
         npm pack
         echo "Pack complete. Listing contents:"
         ls 
@@ -41,7 +41,7 @@ jobs:
       run: echo "::set-output name=PACKAGE_FILE::$(ls ts-frida-*.tgz)"
     
     - name: Rename the npm package
-      run: 
+      run: |
         echo "mv ${{ steps.find_package_file.outputs.PACKAGE_FILE }} ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz"
         mv ${{ steps.find_package_file.outputs.PACKAGE_FILE }} ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
     
