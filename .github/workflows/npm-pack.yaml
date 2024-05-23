@@ -1,9 +1,9 @@
-name: Create Release and Publish npm pack
+name: Create Release and Publish npm package
 
 on:
   push:
     branches:
-      - master # or the branch you wish to trigger the workflow on
+      - master
     tags:
       - 'v*'
 
@@ -18,22 +18,30 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16' # specify the Node.js version you want
+        node-version: '16'
 
     - name: Install dependencies
       run: npm install
-      
+
     - name: Run npm run build
       run: npm run build
 
+    - name: Get the version tag for the release
+      id: get_version
+      run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/v}"
+
     - name: Run npm pack
       run: npm pack
+      # This will create a .tgz file named after the "name" property in package.json and version.
+
+    - name: Rename the npm package
+      run: mv ts-frida-1.0.0.tgz ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
 
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # this token is provided by Actions, you do not need to create your own token
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref_name }}
         release_name: Release ${{ github.ref_name }}
@@ -41,13 +49,13 @@ jobs:
         prerelease: false
 
     - name: Upload Release Asset
-      id: upload-release-asset
+      id: upload_release_asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This is the endpoint where asset uploads are sent
-        asset_path: ./ts-frida-1.0.0.tgz # This is the path to the file you want to upload
-        asset_name: ts-frida-1.0.0.tgz # This is the name the file will get in the release
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_name: ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
         asset_content_type: application/gzip
 
