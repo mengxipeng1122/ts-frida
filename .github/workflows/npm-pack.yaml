@@ -68,7 +68,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
-        asset_name: ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_path: ./ts-frida-$tag.tgz
+        asset_name: ts-frida-$tag.tgz
         asset_content_type: application/gzip
 
