@@ -28,15 +28,23 @@ jobs:
 
     - name: Get the version tag for the release
       id: get_version
-      run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/v}"
+      run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/}"
 
     - name: Run npm pack
-      run: npm pack
-      # This will create a .tgz file named after the "name" property in package.json and version.
-
+      run: 
+        npm pack
+        echo "Pack complete. Listing contents:"
+        ls 
+        
+    - name: Find the package file
+      id: find_package_file
+      run: echo "::set-output name=PACKAGE_FILE::$(ls ts-frida-*.tgz)"
+    
     - name: Rename the npm package
-      run: mv ts-frida-1.0.0.tgz ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
-
+      run: 
+        echo "mv ${{ steps.find_package_file.outputs.PACKAGE_FILE }} ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz"
+        mv ${{ steps.find_package_file.outputs.PACKAGE_FILE }} ts-frida-${{ steps.get_version.outputs.VERSION }}.tgz
+    
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
