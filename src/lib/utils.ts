@@ -458,3 +458,39 @@ export function readFileData(fpath: string, sz: number, offset: number = 0): Arr
         throw new Error(`unhandled platform ${platform}`);
     }
 }
+
+export function readFileText(fpath: string): string {
+    const platform = Process.platform;
+    if (platform === 'linux' || platform === 'windows') {
+        const fopen = new NativeFunction(Module.getExportByName(null, 'fopen'), 'pointer', ['pointer', 'pointer']);
+        const fseek = new NativeFunction(Module.getExportByName(null, 'fseek'), 'int', ['pointer', 'long', 'int']);
+        const ftell = new NativeFunction(Module.getExportByName(null, 'ftell'), 'int', ['pointer']);
+        const fclose = new NativeFunction(Module.getExportByName(null, 'fclose'), 'int', ['pointer']);
+        const fread = new NativeFunction(Module.getExportByName(null, 'fread'), 'size_t', ['pointer', 'size_t', 'size_t', 'pointer']);
+        const SEEK_SET = 0;
+        const SEEK_CUR = 1;
+        const SEEK_END = 2;
+
+        const fp = fopen(Memory.allocUtf8String(fpath), Memory.allocUtf8String('rb'));
+        if (fp.isNull()) {
+            throw new Error(`open ${fpath} failed`);
+        }
+        fseek(fp, 0, SEEK_END);
+        const sz = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+        const buf = Memory.alloc(sz);
+        const read = fread(buf, 1, sz, fp);
+        if (read.toNumber() !== sz) {
+            console.log(`error at read file ${fpath}, ${read}/${sz}`);
+        }
+        const s =  buf.readUtf8String();
+        if(s==null){
+            throw new Error(`read string failed when read file ${fpath}`);
+        }
+        fclose(fp);
+        return s;
+    } else {
+        throw new Error(`unhandled platform ${platform}`);
+    }
+}
+
