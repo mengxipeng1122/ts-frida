@@ -113,3 +113,44 @@ int write_bytes_to_file(const char *file_path, const unsigned char *data, size_t
     return 0; // Success
 }
 
+int write_text_file (const char* filename, char* context) {
+    FILE* fp = fopen(filename, "w");
+    if (fp == (void*)0) {
+        return -1;
+    }
+    int ret = fprintf(fp, "%s", context);
+    fclose(fp);
+    return ret;
+}
+
+
+static const char base64_chars[] =
+             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+             "abcdefghijklmnopqrstuvwxyz"
+             "0123456789+/";
+
+int base64_encode(const unsigned char *in, int in_len, char *out, int out_len) {
+    int i, j;
+    int output_len = 4 * ((in_len + 2) / 3);
+
+    if (out != NULL) {
+        for (i = 0, j = 0; i < in_len; i += 3, j += 4) {
+            int a = in[i];
+            int b = (i + 1 < in_len) ? in[i + 1] : 0;
+            int c = (i + 2 < in_len) ? in[i + 2] : 0;
+
+            out[j] = base64_chars[a >> 2];
+            out[j + 1] = base64_chars[((a & 0x03) << 4) | (b >> 4)];
+            out[j + 2] = (i + 1 < in_len) ? base64_chars[((b & 0x0F) << 2) | (c >> 6)] : '=';
+            out[j + 3] = (i + 2 < in_len) ? base64_chars[c & 0x3F] : '=';
+        }
+
+        if (j < out_len) {
+            out[j] = '0';
+        }
+    }
+
+    return output_len;
+}
+
+

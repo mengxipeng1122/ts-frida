@@ -1,7 +1,5 @@
 import { 
     dumpMemory, 
-    resolveSymbol, 
-    frida_symtab,
 } from "./utils";
 
 const checkAndroidPlatform = ()=>{
@@ -773,13 +771,6 @@ export type BaseHookJavaFuncType = {
     
 } & HookJavaFuncOpts;
 
-export const hookJavaFunctions = (infos:HookJavaFuncType[]) => {
-    infos.forEach(t=>{
-        console.log('hook', JSON.stringify(t))
-        hookJavaFunction(t);
-    })
-}
-
 export const hookJavaFunction = (t:HookJavaFuncType) => {
     let method = t.argsList==undefined 
         ?  Java.use(t.clzname)[t.methodName]
@@ -1322,7 +1313,6 @@ export const hookMethodsInClass = (clzname:string, opts?:any)=>{
 }
 
 export const exitAndroidApp = ()=>{
-     // Get the current activity instance
      // Get the current activity's instance
      var currentActivity = getCurrentActivity();
  
@@ -1357,33 +1347,15 @@ export const convertJavaByteArrayToString = (byteArray: any) => {
     return str.readUtf8String();
 }
 
-export const dumpByteArray = (byteArray:any)=>{
-        const byteArrayLength = byteArray.length;
-        const memory = Memory.alloc(byteArrayLength);
-        const uint8Array = new Uint8Array(byteArray);
-        uint8Array.forEach((byte, index) => {
-            memory.add(index).writeU8(byte);
-        });
-        dumpMemory(memory, byteArrayLength);
-    }
-
-export  const  parseQueryString = (queryString: string): { [key: string]: string[] } => {
-        const params: { [key: string]: string[] } = {};
-        queryString.replace(/([^=?&]+)=([^&]*)/g, function(_m, key, value) {
-            key = decodeURIComponent(key);
-            value = decodeURIComponent(value);
-      
-            if (!(key in params)) {
-                params[key] = [];
-            }
-      
-            params[key].push(value);
-      
-            return '';
-        });
-      
-        return params;
-    }
+export const dumpByteArray = (byteArray: any) => {
+    const byteArrayLength = byteArray.length;
+    const memory = Memory.alloc(byteArrayLength);
+    const uint8Array = new Uint8Array(byteArray);
+    uint8Array.forEach((byte, index) => {
+        memory.add(index).writeU8(byte);
+    });
+    dumpMemory(memory, byteArrayLength);
+}
 
 
 class AndroidInstance {
