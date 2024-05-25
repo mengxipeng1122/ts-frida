@@ -724,6 +724,7 @@ export const runFunWithExceptHandling = (f: () => void, modInfos: MODINFOS_TYPE 
     const handleExceptionContext = (e: Error): void => {
         if ((e as any).context !== undefined) {
             const context = (e as any).context;
+            console.log(`context: ${JSON.stringify(context)}`)
             console.log('called from:\n' +
                 Thread.backtrace(context, Backtracer.ACCURATE)
                     .map(DebugSymbol.fromAddress).join('\n') + '\n');
