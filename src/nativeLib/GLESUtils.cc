@@ -237,7 +237,7 @@ int listAllTexture2Ds(unsigned char* base, const char* outputDir) {
     return 0;
 }
 
-int enumerate_all_texture2Ds(std::function<bool(int,int,int,int,int)> func, int max_cnt=3000) {
+int enumerate_all_texture2Ds(bool(*func)(int,int,int,int,int, void* conext), void* context, int max_cnt=3000) {
     int originalTextureID = 0;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &originalTextureID);
     int texture2DCnt = 0;
@@ -256,9 +256,9 @@ int enumerate_all_texture2Ds(std::function<bool(int,int,int,int,int)> func, int 
             glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
             glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_COMPRESSED, &isCompressed);
 
-            LOG_INFOS("t=%d, w=%d, h=%d, internalFormat=%d, compressed=%d", t, width, height, internalFormat, isCompressed);
+            LOG_INFOS("t=%d, w=%d, h=%d, internalFormat=%d, compressed=%d ", t, width, height, internalFormat, isCompressed );
 
-            auto cont = func(t, width, height, internalFormat, isCompressed);
+            auto cont = func(t, width, height, internalFormat, isCompressed, context);
             if(!cont) break;
             texture2DCnt ++;
         }
@@ -434,6 +434,17 @@ void saveTextureToFileUsingShader(GLuint textureId, int width, int height, const
     // Application-specific shutdown code here...
 }
 
+static bool dump_all_texture2Ds_cb (int id, int width, int height, int internalFormat, int isCompressed, void* context) {
+    const char* outputDir = (char*)context;
+    {
+        static char filename[1024];
+        sprintf(filename, "%s/%08d.bin", outputDir, id);
+        LOG_INFOS("filename: %s", filename);
+        saveTextureToFileUsingShader(id, width, height, filename, internalFormat);
+    }
+    return true;
+};
+
 
 int dump_all_texture2Ds (unsigned char* base, const char* outputDir, int clear ) {
 
@@ -441,15 +452,7 @@ int dump_all_texture2Ds (unsigned char* base, const char* outputDir, int clear )
 
     if(clear) delete_and_remake_folder(outputDir);
 
-    auto cnt = enumerate_all_texture2Ds( [outputDir](int id, int width, int height, int internalFormat, int isCompressed) {
-        {
-            static char filename[1024];
-            sprintf(filename, "%s/%08d.bin", outputDir, id);
-            LOG_INFOS("filename: %s", filename);
-            saveTextureToFileUsingShader(id, width, height, filename, internalFormat);
-        }
-        return true;
-    });
+    auto cnt = enumerate_all_texture2Ds( dump_all_texture2Ds_cb, (void*)outputDir) ;
 
     LOG_INFOS("%d textures dumped", cnt);
 

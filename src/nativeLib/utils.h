@@ -25,3 +25,5 @@ int make_folder(const char *folder_path) ;
 int delete_and_remake_folder(const char *folder_path) ;
 int create_dir_recursively(const char *dir) ;
 int write_bytes_to_file(const char *file_path, const unsigned char *data, size_t data_size) ;
+int write_text_file (const char* filename, char* context) ;
+int base64_encode(const unsigned char *in, int in_len, char *out, int out_len) ;
