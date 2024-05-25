@@ -367,64 +367,97 @@ export type MODINFO_BASETYPE = {
 };
 
 
+
 /**
  * Resolves a symbol in one or more libraries.
  *
- * @param {string} name - The name of the symbol to resolve.
+ * @param {string} symbolName - The name of the symbol to resolve.
  * @param {(MODINFO_BASETYPE | string)[]} libraries - An array of libraries to search for the symbol.
- * @param {{[key: string]: NativePointer}} [symbols] - An optional object containing already resolved symbols.
- * @param {{useFindSymbols?: boolean}} [opts] - An optional object containing options.
- * @param {boolean} [opts.useFindSymbols] - A flag indicating whether to use the Module.enumerateSymbols() method to find the symbol.
+ * @param {{[key: string]: NativePointer}} [resolvedSymbols] - An optional object containing already resolved symbols.
+ * @param {{useFindSymbols?: boolean}} [options] - An optional object containing options.
+ * @returns {NativePointer} - The resolved symbol address.
  * @throws {Error} - Throws an error if the symbol cannot be resolved.
- * @return {NativePointer} - The resolved symbol address.
  */
 export const resolveSymbol = (
-    name: string, 
-    libraries: (MODINFO_BASETYPE | string)[], 
-    symbols?: {[key: string]: NativePointer},
-    opts?: {useFindSymbols?:boolean},
-): NativePointer => {
+        symbolName: string,
+        libraries?: (MODINFO_BASETYPE | string)[],
+        resolvedSymbols: { [key: string]: NativePointer } = {},
+        options: { useFindSymbols?: boolean } = {},
+        ): NativePointer => {
+    const useFindSymbols = options.useFindSymbols || false;
 
-    // Set the useFindSymbols flag to the value in opts or false.
-    const useFindSymbols = opts?.useFindSymbols || false;
+    let resolvedSymbol: NativePointer | undefined = resolvedSymbols[symbolName];
 
-    // Check if the symbol is already resolved.
-    if (symbols && symbols[name]) {
-        return symbols[name];
+    if (resolvedSymbol) {
+        return resolvedSymbol;
     }
 
-    // Iterate over the libraries.
-    for (const lib of libraries) {
-        // If the library is a string, search for the symbol in the module.
-        if (typeof lib === 'string') {
-            const module = Process.getModuleByName(lib);
-            const exportAddress = Module.findExportByName(lib, name) ||
-                module.enumerateExports().find(e => e.name === name)?.address ||
-                (useFindSymbols && module.enumerateSymbols().find(e => e.name === name)?.address);
-            if (exportAddress) {
-                return exportAddress;
-            }
-        } else {
-            // If the library is an object, check if the symbol is in the symbols object.
-            const exportByName = Module.findExportByName(lib.name, name);
-            if (exportByName) {
-                return exportByName;
-            }
-            if (lib.symbols[name]) {
-                return lib.symbols[name];
+    const findSymbolInModule = (moduleName: string): NativePointer | undefined => {
+        const exportByName = Module.findExportByName(moduleName, symbolName) || undefined;
+        return exportByName;
+    };
+
+    if (libraries) {
+        for (const library of libraries) {
+            if (typeof library === 'string') {
+                resolvedSymbol = findSymbolInModule(library);
+
+                if (resolvedSymbol) {
+                    return resolvedSymbol;
+                }
+
+                const module = Process.findModuleByName(library);
+                if (module) {
+                    resolvedSymbol = module.enumerateExports().find((exportedSymbol) => exportedSymbol.name === symbolName)?.address;
+
+                    if (resolvedSymbol) {
+                        return resolvedSymbol;
+                    }
+
+                    if (useFindSymbols) {
+                        resolvedSymbol = module.enumerateSymbols().find((symbol) => symbol.name === symbolName)?.address;
+                        if (resolvedSymbol) {
+                            return resolvedSymbol;
+                        }
+                    }
+                }
+            } else {
+                resolvedSymbol = findSymbolInModule(library.name);
+                if (resolvedSymbol) {
+                    return resolvedSymbol;
+                }
+
+                resolvedSymbol = library.symbols[symbolName];
+                if (resolvedSymbol) {
+                    return resolvedSymbol;
+                }
             }
         }
     }
 
-    // If the symbol is not found in any library, search for it in the null module.
-    const exportByNameNull = Module.findExportByName(null, name);
-    if (exportByNameNull) {
-        return exportByNameNull;
+    resolvedSymbol = Module.findExportByName(null, symbolName) ?? undefined;
+    if (resolvedSymbol) {
+        return resolvedSymbol;
     }
 
-    // If the symbol cannot be resolved, throw an error.
-    throw new Error(`Unable to resolve symbol ${name}`);
+    const modules = Process.enumerateModules();
+    if (modules) {
+        for (const module of modules) {
+            resolvedSymbol = module.findExportByName(symbolName) ?? undefined;
+            if (resolvedSymbol) {
+                return resolvedSymbol;
+            }
+
+            resolvedSymbol = module.enumerateSymbols().find((symbol) => symbol.name === symbolName)?.address;
+            if (resolvedSymbol) {
+                return resolvedSymbol;
+            }
+        }
+    }
+
+    throw new Error(`Unable to resolve symbol ${symbolName}`);
 };
+
 
 export function readFileData(fpath: string, sz: number, offset: number = 0): ArrayBuffer {
     if (sz <= 0) {
