@@ -141,9 +141,9 @@ const parseElfSectionHeader = (p:NativePointer):ELF_SECTION_HEADER => {
 export const getELFInfo = (moduleName: string): { ndkVersion?: string, buildId?: string } => {
     const module = Process.getModuleByName(moduleName);
 
-    const { path: modulePath, base: moduleBase, size: moduleSize } = module;
+    const { path: modulePath, } = module;
 
-    const fileBuffer = readFileData(modulePath, moduleSize);
+    const fileBuffer = readFileData(modulePath);
     if (!fileBuffer) {
         throw new Error(`Unable to read file ${modulePath}`);
     }

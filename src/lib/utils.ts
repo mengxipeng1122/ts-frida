@@ -459,23 +459,31 @@ export const resolveSymbol = (
 };
 
 
-export function readFileData(fpath: string, sz: number, offset: number = 0): ArrayBuffer {
-    if (sz <= 0) {
-        return new ArrayBuffer(0);
-    }
+export function readFileData(fpath: string, sz?: number, offset: number = 0): ArrayBuffer {
     const platform = Process.platform;
     if (platform === 'linux' || platform === 'windows') {
         const fopen = new NativeFunction(Module.getExportByName(null, 'fopen'), 'pointer', ['pointer', 'pointer']);
         const fseek = new NativeFunction(Module.getExportByName(null, 'fseek'), 'int', ['pointer', 'long', 'int']);
+        const ftell = new NativeFunction(Module.getExportByName(null, 'ftell'), 'int', ['pointer']);
         const fclose = new NativeFunction(Module.getExportByName(null, 'fclose'), 'int', ['pointer']);
         const fread = new NativeFunction(Module.getExportByName(null, 'fread'), 'size_t', ['pointer', 'size_t', 'size_t', 'pointer']);
-        const buf = Memory.alloc(sz);
         const SEEK_SET = 0;
+        const SEEK_CUR = 1;
+        const SEEK_END = 2;
 
         const fp = fopen(Memory.allocUtf8String(fpath), Memory.allocUtf8String('rb'));
         if (fp.isNull()) {
             throw new Error(`open ${fpath} failed`);
         }
+
+        if(sz==undefined){
+            // Get the file size
+            fseek(fp, 0, SEEK_END);
+            sz = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
+        }
+
+        const buf = Memory.alloc(sz);
         fseek(fp, offset, SEEK_SET);
         const read = fread(buf, 1, sz, fp);
         if (read.toNumber() !== sz) {
