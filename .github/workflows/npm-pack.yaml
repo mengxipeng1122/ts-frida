@@ -2,8 +2,6 @@ name: Create Release and Publish npm package
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
