@@ -1,5 +1,6 @@
 
 #include <errno.h>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -151,6 +152,46 @@ int base64_encode(const unsigned char *in, int in_len, char *out, int out_len) {
     }
 
     return output_len;
+}
+
+std::string getBasename(const std::string& pathname) {
+    // Find the last position of the path separator
+    size_t pos = pathname.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        // Return the substring after the last path separator
+        return pathname.substr(pos + 1);
+    }
+    return pathname; // If no separator was found, return the whole string
+}
+
+std::string get_module_name_and_offset(void* ptr) {
+    Dl_info dl_info;
+    if (dladdr(ptr, &dl_info) == 0) {
+        return "Error: Could not find module for the given pointer.";
+    }
+
+    // dl_info.dli_fbase gives the base address where the shared object is loaded.
+    uintptr_t base_address = reinterpret_cast<uintptr_t>(dl_info.dli_fbase);
+    // Cast the pointer to uintptr_t before the arithmetic operation for portability.
+    uintptr_t address = reinterpret_cast<uintptr_t>(ptr);
+    uintptr_t offset = address - base_address;
+
+    // Check if we have a valid shared object name.
+    std::string module_name = dl_info.dli_fname ? dl_info.dli_fname : "Unknown";
+
+    module_name = getBasename(module_name);
+
+    // Convert the offset to a string in hexadecimal form.
+    char offset_str[32];
+#if defined(__aarch64__)
+    snprintf(offset_str, sizeof(offset_str), "0x%jx 0x%jx", static_cast<uintmax_t>(offset), static_cast<uintmax_t>(offset+0x100000));
+#elif defined(__arm__)
+    snprintf(offset_str, sizeof(offset_str), "0x%jx 0x%jx", static_cast<uintmax_t>(offset), static_cast<uintmax_t>(offset+0x1000));
+#else
+    snprintf(offset_str, sizeof(offset_str), "0x%jx", static_cast<uintmax_t>(offset));
+#endif
+
+    return module_name + "@" + offset_str;
 }
 
 
