@@ -81,7 +81,8 @@ def handle_ELF(info, binary, no_content=False):
             int(lief.ELF.RELOCATION_AARCH64.RELATIVE ) ,
             int(lief.ELF.RELOCATION_X86_64.R64       ) ,
         ]:
-            code = f'base.add({hex(address)}).writePointer(base.add({hex(address)}).readPointer().add(base));'
+            addend = rel.addend
+            code = f'base.add({hex(address)}).writePointer(base.add({hex(addend)}));'
 
         elif typ in [
             int(lief.ELF.RELOCATION_ARM.GLOB_DAT        ) ,
