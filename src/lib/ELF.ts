@@ -134,19 +134,11 @@ const parseElfSectionHeader = (p:NativePointer):ELF_SECTION_HEADER => {
 /**
  * Retrieves the NDK version and build ID of an ELF module by name.
  *
- * @param {string} moduleName - The name of the module.
+ * @param {ArrayBuffer} fileBuffer - The name of the module.
  * @throws {string} - Throws an error if the NDK version or build ID is not found.
  * @return {{ version?: string, buildId?: string }} - The NDK version and build ID of the module.
  */
-export const getELFInfo = (moduleName: string): { ndkVersion?: string, buildId?: string } => {
-    const module = Process.getModuleByName(moduleName);
-
-    const { path: modulePath, } = module;
-
-    const fileBuffer = readFileData(modulePath);
-    if (!fileBuffer) {
-        throw new Error(`Unable to read file ${modulePath}`);
-    }
+export const getELFInfo = (fileBuffer: ArrayBuffer): { ndkVersion?: string, buildId?: string } => {
 
     const filePointer = Memory.alloc(fileBuffer.byteLength);
     filePointer.writeByteArray(fileBuffer);

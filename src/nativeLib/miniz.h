@@ -1422,6 +1422,8 @@ MINIZ_EXPORT int enumerate_entries_in_zipfile(const char *zip_filename,
                         int (*entry_handler)(const mz_zip_archive_file_stat *, void *),
                         void *user_data) ;
 
+MINIZ_EXPORT int read_entries_in_zipfile(const char *zip_filename, const char *entry_name, unsigned char *buff) ;
+
 #endif /* #ifndef MINIZ_NO_ARCHIVE_WRITING_APIS */
 
 #ifdef __cplusplus

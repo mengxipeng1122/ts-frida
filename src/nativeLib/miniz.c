@@ -7868,7 +7868,57 @@ enumerate_entries_in_zipfile(const char *zip_filename,
     return num_entries;
 }
 
+MINIZ_EXPORT int read_entries_in_zipfile(const char *zip_filename, const char *entry_name, unsigned char *buff) {
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
 
+    if (!mz_zip_reader_init_file(&zip_archive, zip_filename, 0)) {
+        return -1;
+    }
+
+    int entry_index = mz_zip_reader_locate_file(&zip_archive, entry_name, NULL, 0);
+    if (entry_index < 0) {
+        mz_zip_reader_end(&zip_archive);
+        return -2;
+    }
+
+    mz_zip_archive_file_stat file_stat;
+    if (!mz_zip_reader_file_stat(&zip_archive, entry_index, &file_stat)) {
+        mz_zip_reader_end(&zip_archive);
+        return -3;
+    }
+
+    mz_uint bytes_to_read = (mz_uint)file_stat.m_uncomp_size;
+    if (buff != NULL) {
+        if (!mz_zip_reader_extract_to_mem(&zip_archive, entry_index, buff, bytes_to_read, 0)) {
+            mz_zip_reader_end(&zip_archive);
+            return -4;
+        }
+    }
+
+    mz_zip_reader_end(&zip_archive);
+    return bytes_to_read;
+}
+
+
+
+////////////////////////////////////////////////////
+// help
+
+void _frida_log(const char* message);
+
+static int zipfile_cb(const mz_zip_archive_file_stat * stat, void * content) {
+    _frida_log(stat->m_filename);
+    return 0;
+}
+
+__attribute__((visibility("default"))) int enumerateEntriesInZipfile (const char* zipfn) {
+    return enumerate_entries_in_zipfile(zipfn, zipfile_cb, NULL) ;
+}
+
+__attribute__((visibility("default"))) int readZipEntry (const char* zipfn, const char* entry, unsigned char* buff) {
+    return read_entries_in_zipfile(zipfn, entry, buff) ;
+}
 
 
 
