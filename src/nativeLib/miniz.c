@@ -7830,7 +7830,7 @@ mz_bool mz_zip_end(mz_zip_archive *pZip)
 // add some util functions
 int 
 enumerate_entries_in_zipfile(const char *zip_filename,
-                        int (*entry_handler)(const mz_zip_archive_file_stat *, void *),
+                        int (*entry_handler)(const mz_zip_archive_file_stat *, struct HandlerContext *),
                         void *user_data) {
     mz_zip_archive zip_archive;
     mz_uint num_entries, i;
@@ -7905,15 +7905,22 @@ MINIZ_EXPORT int read_entries_in_zipfile(const char *zip_filename, const char *e
 ////////////////////////////////////////////////////
 // help
 
-void _frida_log(const char* message);
-
-static int zipfile_cb(const mz_zip_archive_file_stat * stat, void * content) {
-    _frida_log(stat->m_filename);
+// void _frida_log(const char* message);
+static int zipfile_cb(const mz_zip_archive_file_stat * stat, struct HandlerContext * context) {
+    typedef int (*CB_TYPE)(const char* name);
+    CB_TYPE cb = (CB_TYPE)(context->user_data);
+    cb(stat->m_filename);
     return 0;
 }
 
-__attribute__((visibility("default"))) int enumerateEntriesInZipfile (const char* zipfn) {
-    return enumerate_entries_in_zipfile(zipfn, zipfile_cb, NULL) ;
+__attribute__((visibility("default"))) int enumerateEntriesInZipfile (
+      const char* zipfn
+    , int (*cb)(const char* name)
+    ) {
+    char tmp[0x100];
+    sprintf(tmp, "zipfn, %p %s cb: %p", zipfn, zipfn, cb);
+    _frida_log(tmp);
+    return enumerate_entries_in_zipfile(zipfn, zipfile_cb, cb) ;
 }
 
 __attribute__((visibility("default"))) int readZipEntry (const char* zipfn, const char* entry, unsigned char* buff) {

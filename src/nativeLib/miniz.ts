@@ -1,4 +1,29 @@
 
+
+export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:any) : string[] => {
+
+    if(libpatch.symbols.enumerateEntriesInZipfile == undefined) throw new Error('can not find enumerateEntries in libpatch');
+
+    let ret:string[] = [];
+    const cb = new NativeCallback(function (pname) {
+                const name = pname.readUtf8String();
+                if(name!=null) ret.push(name);
+                return 0;
+            },'int',['pointer']);
+    const pzipfn = Memory.allocUtf8String(zipfn);
+    console.log('cb', cb, pzipfn);
+
+
+    const enumerateEntries = new NativeFunction(libpatch.symbols.enumerateEntriesInZipfile,
+        'int', ['pointer', 'pointer'])(
+            pzipfn,
+            cb,
+        );
+    console.log('cb', cb);
+    return ret;
+    
+}
+
 export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpatch:any) : ArrayBuffer | null => {
     
 

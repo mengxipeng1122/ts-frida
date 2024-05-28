@@ -1419,7 +1419,7 @@ struct HandlerContext {
 };
 
 MINIZ_EXPORT int enumerate_entries_in_zipfile(const char *zip_filename,
-                        int (*entry_handler)(const mz_zip_archive_file_stat *, void *),
+                        int (*entry_handler)(const mz_zip_archive_file_stat *, struct HandlerContext *),
                         void *user_data) ;
 
 MINIZ_EXPORT int read_entries_in_zipfile(const char *zip_filename, const char *entry_name, unsigned char *buff) ;
