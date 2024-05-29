@@ -12,7 +12,6 @@ void imguiInit(int width, int height)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    LOG_INFOS("");
 
     // Disable loading/saving of .ini file from disk.
     // FIXME: Consider using LoadIniSettingsFromMemory() / SaveIniSettingsToMemory() to save in appropriate location for Android.
@@ -75,10 +74,8 @@ void imguiDraw() {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::NewFrame();
             ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(1000, 680), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(300, 680), ImGuiCond_FirstUseEver);
             ImGui::Begin("Nodes Navigator"); 
-                bool v=1;
-                ImGui::Checkbox("", &v);
             ImGui::End();
         ImGui::Render();
         }

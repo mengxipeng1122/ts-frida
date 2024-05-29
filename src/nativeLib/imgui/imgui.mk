@@ -7,5 +7,7 @@ SRC_FILES=                       \
     imgui_impl_opengl3.cpp       \
     imgui_tables.cpp             \
     imgui_wrapper.cpp            \
-    imgui_demo.cpp               \
     imgui_widgets.cpp
+
+LOCAL_CPPFLAGS += -DIMGUI_IMPL_OPENGL_ES2  
+
