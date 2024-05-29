@@ -93,12 +93,12 @@ struct UnityResolve final {
 	};
 
 	struct Class final {
-		const Il2CppClass*         classinfo;
-		std::string          name;
-		std::string          parent;
-		std::string          namespaze;
-		std::vector<Field*>  fields;
-		std::vector<Method*> methods;
+		const Il2CppClass*         	classinfo;
+		std::string          		name;
+		std::string          		parent;
+		std::string          		namespaze;
+		std::vector<Field*>  		fields;
+		std::vector<Method*> 		methods;
 		void* objType;
 
         
@@ -280,13 +280,13 @@ struct UnityResolve final {
 	};
 
 	struct Method final {
-		const MethodInfo* address;
-		std::string  name;
-		Class* klass;
-		Type* return_type;
-		std::int32_t flags;
-		bool         static_function;
-		void* function;
+		const MethodInfo* 	address;
+		std::string  		name;
+		Class* 				klass;
+		Type* 				return_type;
+		std::int32_t 		flags;
+		bool         		static_function;
+		void* 				function;
         
 
 		struct Arg {
@@ -297,7 +297,6 @@ struct UnityResolve final {
 		std::vector<Arg*> args;
 
 		bool badPtr{ false };
-
 
         nlohmann::json to_json() const {
 
@@ -329,8 +328,6 @@ struct UnityResolve final {
 
             return j;
         };
-
-
 
 		template <typename Return, typename... Args>
 		auto Invoke(Args... args) -> Return {
@@ -375,6 +372,34 @@ struct UnityResolve final {
             return Return();
 			// throw std::logic_error("nullptr");
 		}
+
+		std::string prototype() const {
+		    std::string prototype;
+
+		    // Assuming Type has a getName() method to get a string representation of the type
+		    prototype += return_type->name;
+		    prototype += " ";
+		    prototype += static_function ? "static " : "";
+		    prototype += name;
+		    prototype += "(";
+
+		    for (size_t i = 0; i < args.size(); ++i) {
+		        const Arg* arg = args[i];
+		        if (arg != nullptr) {
+		            prototype += arg->pType ? arg->pType->name : "void";
+		            prototype += " ";
+		            prototype += arg->name;
+		            if (i < args.size() - 1) {
+		                prototype += ", ";
+		            }
+		        }
+		    }
+
+		    prototype += ")";
+		    return prototype;
+		}
+
+
 	};
 
 	static auto ThreadAttach() -> void {
@@ -1616,9 +1641,12 @@ struct UnityResolve final {
 			void* m_CachedPtr;
 
 			auto GetName() -> std::string {
+				LOG_INFOS("m_ChachedPtr %p", m_CachedPtr);
 				static Method* method;
 				if (!method) method = Get("UnityEngine.CoreModule.dll")->Get("Object")->Get<Method>("get_name");
+				LOG_INFOS("method %p", method);
 				if (method) return method->Invoke<String*>(this)->ToString();
+				LOG_INFOS("nullptr");
 				// throw std::logic_error("nullptr");
                 return {};
 			}
@@ -2372,7 +2400,7 @@ struct UnityResolve final {
 		}
 	};
 
-private:
+public:
     static std::vector<Assembly*> assembly_;
 	static std::unordered_map<std::string, void*> address_;
 	static Il2CppDomain* pDomain_;
