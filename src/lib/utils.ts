@@ -1339,3 +1339,25 @@ export let findMaxOccurrenceNumber = (numbers: number[]): number | undefined => 
 
   return pointerWithMaxOccurrence;
 }
+
+export type PATHLIB_INFO_TYPE  = {
+
+
+    unload      : ()=>void,
+
+    
+    name        : string,
+
+    base        : NativePointer,
+
+    load_size  ?: number;
+
+
+    cave        : NativePointer,
+
+
+    symbols     : {[key:string]:NativePointer},
+
+    inits      ?: NativePointer[];
+
+};

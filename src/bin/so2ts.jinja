@@ -3,31 +3,11 @@ import {
     MODINFO_BASETYPE, 
     resolveSymbol,
     readFileData,
+    PATHLIB_INFO_TYPE,
 } from 'ts-frida'
 
 let base = ptr(0); // avoid frida free allocated buffer 
 
-export type INFO_TYPE  = {
-
-{% if info['mode'] == 'load' %}
-    unload      : ()=>void,
-{% endif %}
-    
-    name        : string,
-
-    base        : NativePointer,
-
-    load_size  ?: number;
-
-{% if 'cave_offset' in info %}
-    cave        : NativePointer,
-{% endif %}
-
-    symbols     : {[key:string]:NativePointer},
-
-    inits      ?: NativePointer[];
-
-};
 
 const mod_init  = (base:NativePointer)=>{
     // initialize codes
@@ -45,9 +25,9 @@ export let mod  = {
 
 {% if info['mode'] == 'load' %}
     {% if info['no_content'] %}
-        load: (sopath:string, libs: (MODINFO_BASETYPE|string)[] =[], syms:{[key:string]:NativePointer} ={}, init:boolean=true):INFO_TYPE=>{
+        load: (sopath:string, libs: (MODINFO_BASETYPE|string)[] =[], syms:{[key:string]:NativePointer} ={}, init:boolean=true):PATHLIB_INFO_TYPE=>{
     {% else %}
-        load: (libs: (MODINFO_BASETYPE|string)[] = [], syms:{[key:string]:NativePointer}={}, init:boolean=true):INFO_TYPE=>{
+        load: (libs: (MODINFO_BASETYPE|string)[] = [], syms:{[key:string]:NativePointer}={}, init:boolean=true):PATHLIB_INFO_TYPE=>{
     {% endif %}
 
 
@@ -81,18 +61,18 @@ export let mod  = {
 
 {% elif info['mode'] == 'get' %}
     {% if 'name' in info and info['name'] | length >0 %}
-        get: (soname?:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):INFO_TYPE=>{
+        get: (soname?:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):PATHLIB_INFO_TYPE=>{
             let name = '{{ info["name"]}}'; 
             if(soname!=undefined) name = soname;
     {% else %}
-        get: (soname:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):INFO_TYPE=>{
+        get: (soname:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):PATHLIB_INFO_TYPE=>{
             let name = soname;
     {% endif %}
             base = Process.getModuleByName(name).base;
     {% endif %}
         
 
-            const ___info:INFO_TYPE = {
+            const ___info:PATHLIB_INFO_TYPE = {
         {% if info['mode'] == 'load' %}
                 unload      : ()=>{
                     //unhook 
