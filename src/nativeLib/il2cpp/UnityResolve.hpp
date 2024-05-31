@@ -1459,7 +1459,8 @@ struct UnityResolve final {
 			struct {
 				std::uintptr_t length;
 				std::int32_t   lower_bound;
-			}*bounds{ nullptr };
+			}*
+			bounds{ nullptr };
 
 			std::uintptr_t          max_length{ 0 };
 			__declspec(align(8)) T* vector[32]{};

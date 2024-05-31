@@ -28,4 +28,11 @@ int create_dir_recursively(const char *dir) ;
 int write_bytes_to_file(const char *file_path, const unsigned char *data, size_t data_size) ;
 int write_text_file (const char* filename, char* context) ;
 int base64_encode(const unsigned char *in, int in_len, char *out, int out_len) ;
+
+#if defined(__NDK_MAJOR__) && defined(__NDK_MINOR__)
+    #if __NDK_MAJOR__ >= 19
+    #endif
+#endif
+
 std::string get_module_name_and_offset(void* ptr) ;
+

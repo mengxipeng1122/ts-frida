@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ftw.h>
+#include <dlfcn.h>
 
 #include "utils.h"
 
@@ -154,7 +155,7 @@ int base64_encode(const unsigned char *in, int in_len, char *out, int out_len) {
     return output_len;
 }
 
-std::string getBasename(const std::string& pathname) {
+static std::string get_base_name(const std::string& pathname) {
     // Find the last position of the path separator
     size_t pos = pathname.find_last_of("/\\");
     if (pos != std::string::npos) {
@@ -179,7 +180,7 @@ std::string get_module_name_and_offset(void* ptr) {
     // Check if we have a valid shared object name.
     std::string module_name = dl_info.dli_fname ? dl_info.dli_fname : "Unknown";
 
-    module_name = getBasename(module_name);
+    module_name = get_base_name(module_name);
 
     // Convert the offset to a string in hexadecimal form.
     char offset_str[32];
