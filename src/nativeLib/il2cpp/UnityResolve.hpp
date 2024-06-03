@@ -425,8 +425,9 @@ struct UnityResolve final {
         return j_array;
     }
 
-	static auto DumpToFile(const std::string& path) -> void {
-        std::ofstream io(path + "dump.cs", std::fstream::out);
+	static auto DumpToCFile(const std::string& path) -> void {
+		std::string csDumpPath = path+"dump.cs";
+        std::ofstream io(csDumpPath, std::fstream::out);
         if (!io) return;
     
         for (const auto& pAssembly : assembly_) {
@@ -506,6 +507,8 @@ struct UnityResolve final {
     
         io << '\n';
         io.close();
+
+		LOG_INFOS("go here");
     
         std::ofstream io2(path + "struct.hpp", std::fstream::out);
         if (!io2) return;
@@ -771,7 +774,356 @@ struct UnityResolve final {
     
         io2 << '\n';
         io2.close();
+		LOG_INFOS("go here");
     }
+
+	static auto DumpToFile(const std::string& path) -> void {
+		std::string csDumpPath = path+"dump.cs";
+		{
+			FILE *fp = fopen(csDumpPath.c_str(), "w");
+			if (!fp) return;
+
+			for (const auto &pAssembly : assembly_)
+			{
+				for (const auto &pClass : pAssembly->classes)
+				{
+					fprintf(fp, "\tnamespace: ");
+					if (!pClass->namespaze.empty())
+					{
+						fprintf(fp, "%s", pClass->namespaze.c_str());
+					}
+					fprintf(fp, "\n");
+
+					fprintf(fp, "\tAssembly: ");
+					if (!pAssembly->name.empty())
+					{
+						fprintf(fp, "%s", pAssembly->name.c_str());
+					}
+					fputs("\n", fp);
+
+					fputs("\tAssemblyFile: ", fp);
+					if (!pAssembly->file.empty())
+					{
+						fputs(pAssembly->file.c_str(), fp);
+					}
+					fputs("\n", fp);
+
+					fputs("\tClass: ", fp);
+					fputs(pClass->name.c_str(), fp);
+					if (!pClass->parent.empty())
+					{
+						fprintf(fp, " : %s", pClass->parent.c_str());
+					}
+					fprintf(fp, " {\n\n");
+
+					for (const auto &pField : pClass->fields)
+					{
+						fprintf(fp, "\t\t");
+						fprintf(fp, "%#08x | ", pField->offset);
+
+						if (pField->static_field)
+						{
+							fprintf(fp, "static ");
+						}
+
+						fprintf(fp, "%s %s;\n", pField->type->name.c_str(), pField->name.c_str());
+					}
+					fprintf(fp, "\n");
+
+					for (const auto &pMethod : pClass->methods)
+					{
+						fprintf(fp, "\t\t[Flags: ");
+						fprintf(fp, "%s] ", std::bitset<32>(pMethod->flags).to_string().c_str());
+						fprintf(fp, "[ParamsCount: %4d] ", pMethod->args.size());
+						fprintf(fp, "|RVA: ");
+						{
+							// io << std::showpos << std::internal << std::setfill('0');
+							std::string RVA = get_module_name_and_offset(pMethod->function);
+							fprintf(fp, "%s", RVA.c_str());
+						}
+						fprintf(fp, "|\n");
+
+						fprintf(fp, "\t\t");
+						if (pMethod->static_function)
+						{
+							fprintf(fp, "static ");
+						}
+						fprintf(fp, "%s %s(", pMethod->return_type->name.c_str(), pMethod->name.c_str());
+
+						std::string params;
+						for (const auto &pArg : pMethod->args)
+						{
+							params += pArg->pType->name + " " + pArg->name + ", ";
+						}
+						if (!params.empty())
+						{
+							params.pop_back();
+							params.pop_back();
+						}
+						fprintf(fp, "%s", params.c_str());
+
+						fprintf(fp, ");\n\n");
+					}
+
+					fprintf(fp, "\t}\n\n");
+				}
+			}
+
+			fputc('\n', fp);
+			fclose(fp);
+		}
+
+		LOG_INFOS("go here");
+    
+		{
+
+			std::string csStructPath = path + "struct.hpp";
+			FILE* fp = fopen(csStructPath.c_str(), "w");
+			if(!fp) return;
+
+        for (const auto& pAssembly : assembly_) {
+            for (const auto& pClass : pAssembly->classes) {
+                fprintf(fp, "namespace: ");
+                if (!pClass->namespaze.empty()) {
+                    fprintf(fp, "%s", pClass->namespaze.c_str());
+                }
+                fprintf(fp, "\n");
+    
+                fprintf(fp, "Assembly: ");
+                if (!pAssembly->name.empty()) {
+                    fprintf(fp, "%s", pAssembly->name.c_str());
+                }
+                fprintf(fp, "\n");
+    
+                fprintf(fp, "AssemblyFile: ");
+                if (!pAssembly->file.empty()) {
+                    fprintf(fp, "%s", pAssembly->file.c_str());
+                }
+                fprintf(fp, "\n");
+    
+                fprintf(fp, "struct %s", pClass->name.c_str());
+                if (!pClass->parent.empty()) {
+                    fprintf(fp, " : %s", pClass->parent.c_str());
+                }
+                fprintf(fp, " {\n\n");
+    
+                for (size_t i = 0; i < pClass->fields.size(); i++) {
+                    if (pClass->fields[i]->static_field) {
+                        continue;
+                    }
+    
+                    auto field = pClass->fields[i];
+    
+                next:
+                    if ((i + 1) >= pClass->fields.size()) {
+                        fprintf(fp, "\t\tchar %s[0x%x];\n", field->name.c_str(), 4);
+                        continue;
+                    }
+    
+                    if (pClass->fields[i + 1]->static_field) {
+                        i++;
+                        goto next;
+                    }
+    
+                    std::string name = field->name;
+                    std::replace(name.begin(), name.end(), '<', '_');
+                    std::replace(name.begin(), name.end(), '>', '_');
+    
+                    if (field->type->name == "System.Int64") {
+                        fprintf(fp, "\t\tstd::int64_t %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 8) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - 8);
+                        }
+                        continue;
+                    }
+    
+                    if (field->type->name == "System.UInt64") {
+                        fprintf(fp, "\t\tstd::uint64_t %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 8) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - 8);
+                        }
+                        continue;
+                    }
+    
+                    if (field->type->name == "System.Int32") {
+                        fprintf(fp, "\t\tint %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 4) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - 4);
+                        }
+                        continue;
+                    }
+    
+                    if (field->type->name == "System.UInt32") {
+                        fprintf(fp, "\t\tstd::uint32_t %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 4) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - 4);
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "System.Boolean") {
+                        fprintf(fp, "\t\tbool %s;\n", name.c_str());
+
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 1) {
+                            std::stringstream hexPadding;
+                            hexPadding << std::hex << std::uppercase << std::setfill('0') << std::setw(6) << (pClass->fields[i + 1]->offset - field->offset - 1);
+                            fprintf(fp, "\t\tchar %s_[0x%s];\n", name.c_str(), hexPadding.str().c_str());
+                        }
+
+                        continue;
+                    }
+
+                    if (field->type->name == "System.String") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::String* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "System.Single") {
+                        fprintf(fp, "\t\tfloat %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 4) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - 4);
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "System.Double") {
+                        fprintf(fp, "\t\tdouble %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > 8) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - 8);
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Vector3") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Vector3 %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Vector3)) {
+                            std::stringstream buffer;
+                            buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(6)
+                                << (pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Vector3));
+                            fprintf(fp, "\t\tchar %s_[0x%s];\n", name.c_str(), buffer.str().c_str());
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Vector2") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Vector2 %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Vector2)) {
+                            std::stringstream buffer;
+                            buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(6)
+                                << (pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Vector2));
+                            fprintf(fp, "\t\tchar %s_[0x%s];\n", name.c_str(), buffer.str().c_str());
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Vector4") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Vector4 %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Vector4)) {
+                            std::stringstream buffer;
+                            buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(6)
+                                << (pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Vector4));
+                            fprintf(fp, "\t\tchar %s_[0x%s];\n", name.c_str(), buffer.str().c_str());
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.GameObject") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::GameObject* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Transform") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Transform* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Animator") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Animator* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Physics") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Physics* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Component") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Component* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Rect") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Rect %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Rect)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Rect));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Quaternion") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Quaternion %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Quaternion)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Quaternion));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Color") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Color %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Color)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Color));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Matrix4x4") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Matrix4x4 %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(UnityType::Matrix4x4)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(UnityType::Matrix4x4));
+                        }
+                        continue;
+                    }
+
+                    if (field->type->name == "UnityEngine.Rigidbody") {
+                        fprintf(fp, "\t\tUnityResolve::UnityType::Rigidbody* %s;\n", name.c_str());
+                        if (!pClass->fields[i + 1]->static_field && (pClass->fields[i + 1]->offset - field->offset) > sizeof(void*)) {
+                            fprintf(fp, "\t\tchar %s_[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset - sizeof(void*));
+                        }
+                        continue;
+                    }
+
+                    fprintf(fp, "\t\tchar %s[0x%x];\n", name.c_str(), pClass->fields[i + 1]->offset - field->offset);
+
+                }
+    
+                fprintf(fp, "\t}\n\n");
+            }
+        }
+    
+		fprintf(fp, "\n\n");
+		fclose(fp);
+		LOG_INFOS("go here");
+		}
+    }
+
 
 	static auto Get(const std::string& strAssembly) -> Assembly* {
 		for (const auto pAssembly : assembly_) if (pAssembly->name == strAssembly) return pAssembly;
