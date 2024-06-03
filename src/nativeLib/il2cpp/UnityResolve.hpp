@@ -1436,9 +1436,8 @@ struct UnityResolve final {
                 auto utf16String = reinterpret_cast<const char16_t*>(m_firstChar);
                 size_t utf16Length = m_stringLength; // Number of UTF-16 code units
 
-                std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-                //std::string utf8String = convert.to_bytes(utf16String, utf16String + utf16Length);
-                std::string utf8String = convert.to_bytes(utf16String, utf16String + utf16Length);
+				std::string utf8String = utf16_to_utf8(utf16String);
+
                 return utf8String;
 			}
 
@@ -1642,10 +1641,8 @@ struct UnityResolve final {
 			void* m_CachedPtr;
 
 			auto GetName() -> std::string {
-				LOG_INFOS("m_ChachedPtr %p", m_CachedPtr);
 				static Method* method;
 				if (!method) method = Get("UnityEngine.CoreModule.dll")->Get("Object")->Get<Method>("get_name");
-				LOG_INFOS("method %p", method);
 				if (method) return method->Invoke<String*>(this)->ToString();
 				LOG_INFOS("nullptr");
 				// throw std::logic_error("nullptr");

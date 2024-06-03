@@ -35,4 +35,5 @@ int base64_encode(const unsigned char *in, int in_len, char *out, int out_len) ;
 #endif
 
 std::string get_module_name_and_offset(void* ptr) ;
+std::string utf16_to_utf8(const std::u16string& utf16_str) ;
 

@@ -196,3 +196,20 @@ std::string get_module_name_and_offset(void* ptr) {
 }
 
 
+std::string utf16_to_utf8(const std::u16string& utf16_str) {
+    std::string utf8_str;
+    for (auto c : utf16_str) {
+        if (c < 0x80) {
+            utf8_str.push_back(static_cast<char>(c));
+        } else if (c < 0x800) {
+            utf8_str.push_back(static_cast<char>(0xc0 | (c >> 6)));
+            utf8_str.push_back(static_cast<char>(0x80 | (c & 0x3f)));
+        } else {
+            utf8_str.push_back(static_cast<char>(0xe0 | (c >> 12)));
+            utf8_str.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3f)));
+            utf8_str.push_back(static_cast<char>(0x80 | (c & 0x3f)));
+        }
+    }
+    return utf8_str;
+}
+
