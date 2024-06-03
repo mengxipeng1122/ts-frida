@@ -2406,3 +2406,4 @@ public:
 
 };
 
+void listAllGameObjects();
