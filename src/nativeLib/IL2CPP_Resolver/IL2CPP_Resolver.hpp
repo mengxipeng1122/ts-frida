@@ -232,4 +232,26 @@ namespace IL2CPP
 
 		return true;
 	}
+
+
+    void listGameObjects() {
+
+
+        Unity::il2cppArray<Unity::CGameObject*>* m_Objects = Unity::Object::FindObjectsOfType<Unity::CGameObject>(UNITY_GAMEOBJECT_CLASS);
+        LOG_INFOS(" find %d", m_Objects->m_uMaxLength);
+        for (uintptr_t u = 0U; m_Objects->m_uMaxLength > u; ++u)
+        {
+            Unity::CGameObject* m_Object = m_Objects->operator[](static_cast<unsigned int>(u));
+            if (!m_Object) continue;
+
+            auto* system_string = m_Object->GetName();
+            if (!system_string) continue;
+
+            std::string s = system_string->ToString();
+            LOG_INFOS(" %s", s.c_str());
+
+        }
+
+    }
 }
+
