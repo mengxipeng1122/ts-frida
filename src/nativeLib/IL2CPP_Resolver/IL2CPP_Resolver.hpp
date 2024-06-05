@@ -241,14 +241,16 @@ namespace IL2CPP
         LOG_INFOS(" find %d", m_Objects->m_uMaxLength);
         for (uintptr_t u = 0U; m_Objects->m_uMaxLength > u; ++u)
         {
-            Unity::CGameObject* m_Object = m_Objects->operator[](static_cast<unsigned int>(u));
-            if (!m_Object) continue;
+            Unity::CGameObject* obj = m_Objects->operator[](static_cast<unsigned int>(u));
+            if (!obj) continue;
 
-            auto* system_string = m_Object->GetName();
+            auto* system_string = obj->GetName();
             if (!system_string) continue;
 
             std::string s = system_string->ToString();
-            LOG_INFOS(" %s", s.c_str());
+
+			auto* clzName = obj->m_Object.m_pClass->m_pName;
+            LOG_INFOS(" %s(%s)", s.c_str(), clzName);
 
         }
 

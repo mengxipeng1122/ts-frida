@@ -2,6 +2,8 @@ import {
     dumpMemory, 
 } from "./utils";
 
+
+
 const checkAndroidPlatform = ()=>{
     if(Process.platform!='linux' || !Java.available) throw new Error(`It seems this process is not on Android platform, please check you configruations`)
 }
@@ -1495,8 +1497,9 @@ export class AndroidActivity extends AndroidInstance {
     }
 };
 
-const JavaSet =Java.use('java.util.Set')
-export const iterateSet = (set: typeof JavaSet, cb?:(e:any)=>boolean)=>{
+export const iterateSet = (set: any, cb?:(e:any)=>boolean)=>{
+    const JavaSet =Java.use('java.util.Set')
+    set = set as typeof JavaSet;
     cb = cb ?? function(e:any){
         console.log('element', e);
         return true;
@@ -1522,3 +1525,10 @@ export const iterateList = (list: typeof JavaList, cb?:(e:any, idx:number)=>bool
     }
 }
 
+export const getAndroidVersioninfo = ()=>{
+
+    return {
+        apiVersion: Java.use('android.os.Build$VERSION').SDK_INT.value,
+        androidVersion: Java.use('android.os.Build$VERSION').RELEASE.value,
+    }
+}
