@@ -213,3 +213,22 @@ std::string utf16_to_utf8(const std::u16string& utf16_str) {
     return utf8_str;
 }
 
+std::string utf16_to_utf8(const char16_t* utf16_str, int length) {
+    std::string utf8_str;
+    for (int i = 0; i < length; i++) {
+        char16_t c = utf16_str[i];
+        if (c < 0x80) {
+            utf8_str.push_back(static_cast<char>(c));
+        } else if (c < 0x800) {
+            utf8_str.push_back(static_cast<char>(0xc0 | (c >> 6)));
+            utf8_str.push_back(static_cast<char>(0x80 | (c & 0x3f)));
+        } else {
+            utf8_str.push_back(static_cast<char>(0xe0 | (c >> 12)));
+            utf8_str.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3f)));
+            utf8_str.push_back(static_cast<char>(0x80 | (c & 0x3f)));
+        }
+    }
+    return utf8_str;
+}
+
+

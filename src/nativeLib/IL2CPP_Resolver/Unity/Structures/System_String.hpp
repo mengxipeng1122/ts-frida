@@ -1,11 +1,16 @@
 #pragma once
 
+#include "utils.h"
+#include <locale>
+#include <codecvt>
+#include <string>
+
 namespace Unity
 {
 	struct System_String : il2cppObject
 	{
 		int m_iLength;
-		wchar_t m_wString[1024];
+		char16_t m_wString[1024];
 
 		void Clear()
 		{
@@ -19,11 +24,9 @@ namespace Unity
 		{
 		    if (!this) return "";
 
-            // TODO: 
-		    // std::string sRet(static_cast<size_t>(m_iLength) * 3 + 1, '\0');
-		    // WideCharToMultiByte(CP_UTF8, 0, m_wString, m_iLength, &sRet[0], static_cast<int>(sRet.size()), 0, 0);
-		    // return sRet;
-            return "";
+			std::string sRet = utf16_to_utf8(m_wString, m_iLength);
+
+		    return sRet;
 		}
 	};
 }
