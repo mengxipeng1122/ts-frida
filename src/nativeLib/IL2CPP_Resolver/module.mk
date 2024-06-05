@@ -1,0 +1,4 @@
+
+
+CFLAGS= -Wundefined-bool-conversion
+
