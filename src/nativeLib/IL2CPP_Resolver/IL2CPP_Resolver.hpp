@@ -236,7 +236,6 @@ namespace IL2CPP
 
     void listGameObjects() {
 
-
         Unity::il2cppArray<Unity::CGameObject*>* m_Objects = Unity::Object::FindObjectsOfType<Unity::CGameObject>(UNITY_GAMEOBJECT_CLASS);
         LOG_INFOS(" find %d", m_Objects->m_uMaxLength);
         for (uintptr_t u = 0U; m_Objects->m_uMaxLength > u; ++u)
@@ -250,7 +249,16 @@ namespace IL2CPP
             std::string s = system_string->ToString();
 
 			auto* clzName = obj->m_Object.m_pClass->m_pName;
-            LOG_INFOS(" %s(%s)", s.c_str(), clzName);
+
+            Unity::il2cppArray<Unity::CComponent*>* m_pComponents = obj->GetComponents("UnityEngine.Component");
+
+            LOG_INFOS(" %s(%s)%d", s.c_str(), clzName, m_pComponents->m_uMaxLength);
+            for (uintptr_t uu = 0U; m_pComponents->m_uMaxLength > uu; ++uu)
+            {
+                Unity::CComponent* m_pComponent = m_pComponents->operator[](static_cast<unsigned int>(uu));
+			    auto* clzName1 = m_pComponent->m_Object.m_pClass->m_pName;
+                LOG_INFOS("     %s(%s) ", m_pComponent->GetName()->ToString().c_str(), clzName1);
+            }
 
         }
 
