@@ -1,9 +1,7 @@
 
-import {
-    PATHLIB_INFO_TYPE,
-} from "../lib/utils"
 
-export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_INFO_TYPE) : string[] => {
+namespace Miniz {
+export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:Utils.PATHLIB_INFO_TYPE) : string[] => {
 
     if(libpatch.symbols.enumerateEntriesInZipfile == undefined) throw new Error('can not find enumerateEntries in libpatch');
 
@@ -14,7 +12,7 @@ export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_I
                 return 0;
             },'int',['pointer']);
     const pzipfn = Memory.allocUtf8String(zipfn);
-    console.log('cb', cb, pzipfn);
+    (globalThis as any). console .log('cb', cb, pzipfn);
 
 
     const enumerateEntries = new NativeFunction(libpatch.symbols.enumerateEntriesInZipfile,
@@ -22,12 +20,12 @@ export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_I
             pzipfn,
             cb,
         );
-    console.log('cb', cb);
+    (globalThis as any). console .log('cb', cb);
     return ret;
     
 }
 
-export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpatch:PATHLIB_INFO_TYPE) : ArrayBuffer | null => {
+export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpatch:Utils.PATHLIB_INFO_TYPE) : ArrayBuffer | null => {
     
 
     if(libpatch.symbols.readZipEntry == undefined) throw new Error('can not find readZipEntry in libpatch');
@@ -50,5 +48,7 @@ export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpat
     );
 
     return membuf.readByteArray(bytes_length)
+
+}
 
 }

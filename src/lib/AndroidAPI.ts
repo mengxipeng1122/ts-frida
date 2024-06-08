@@ -1,7 +1,6 @@
-import { 
-    dumpMemory, 
-} from "./utils";
 
+
+namespace Android {
 
 
 const checkAndroidPlatform = ()=>{
@@ -101,17 +100,17 @@ export const androidAppInfo = ()=>{
     var currentApplication = ActivityThread.currentApplication();
     var context = currentApplication.getApplicationContext();
 
-//    console.log('   applicationName               '      , context.getPackageName().toString()                                             );      
-//    console.log('   packageCodePath               '      , context.getPackageCodePath                 ()                                   );
-//    console.log('   packageResourcePath           '      , context.getPackageResourcePath             ()                                   );
-//    console.log('   cacheDir                      '      , context.getCacheDir                        ()?.getAbsolutePath().toString(),    );
-//    console.log('   codeCacheDir                  '      , context.getCodeCacheDir                    ()?.getAbsolutePath().toString(),    );
-//    console.log('   dataDir                       '      , context.getDataDir                         ()?.getAbsolutePath().toString(),    );
-//    console.log('   externalCacheDir              '      , context.getExternalCacheDir                ()?.getAbsolutePath().toString(),    );
-//    console.log('   externalFilesDir              '      , context.getExternalFilesDir            (null)?.getAbsolutePath().toString(),    );
-//    console.log('   filesDir                      '      , context.getFilesDir                        ()?.getAbsolutePath().toString(),    );
-//    console.log('   noBackupFilesDir              '      , context.getNoBackupFilesDir                ()?.getAbsolutePath().toString(),    );
-//    console.log('   obbDir                        '      , context.getObbDir                          ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   applicationName               '      , context.getPackageName().toString()                                             );      
+//    (globalThis as any). console.log('   packageCodePath               '      , context.getPackageCodePath                 ()                                   );
+//    (globalThis as any). console.log('   packageResourcePath           '      , context.getPackageResourcePath             ()                                   );
+//    (globalThis as any). console.log('   cacheDir                      '      , context.getCacheDir                        ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   codeCacheDir                  '      , context.getCodeCacheDir                    ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   dataDir                       '      , context.getDataDir                         ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   externalCacheDir              '      , context.getExternalCacheDir                ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   externalFilesDir              '      , context.getExternalFilesDir            (null)?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   filesDir                      '      , context.getFilesDir                        ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   noBackupFilesDir              '      , context.getNoBackupFilesDir                ()?.getAbsolutePath().toString(),    );
+//    (globalThis as any). console.log('   obbDir                        '      , context.getObbDir                          ()?.getAbsolutePath().toString(),    );
     
     return {
         applicationName                      : context.getPackageName().toString(),
@@ -176,7 +175,7 @@ export const hookRegisterNatives = (clzname?:string, soname?:string, handles?:{[
                 symbol.name.indexOf("RegisterNatives") >= 0 && 
                 symbol.name.indexOf("CheckJNI") < 0) {
                 addrRegisterNatives = symbol.address;
-                console.log("RegisterNatives is at ", symbol.address, symbol.name);
+                (globalThis as any). console.log("RegisterNatives is at ", symbol.address, symbol.name);
                 Interceptor.attach(addrRegisterNatives,{
                     onEnter:function(args){
                         var env = args[0];
@@ -184,19 +183,19 @@ export const hookRegisterNatives = (clzname?:string, soname?:string, handles?:{[
                         var class_name = Java.vm.tryGetEnv().getClassName(java_class);
                         var methods_ptr = args[2];
                         var method_count = args[3].toUInt32();
-                        console.log('call RegisterNatives', args[0], args[1], args[2], args[3], args[4],)
-                        console.log("this", JSON.stringify(this))
-                        dumpMemory(this.context.sp, 0x50)
+                        (globalThis as any). console.log('call RegisterNatives', args[0], args[1], args[2], args[3], args[4],)
+                        (globalThis as any). console.log("this", JSON.stringify(this))
+                        Utils.dumpMemory(this.context.sp, 0x50)
                         if(true){
                             if(soname!=undefined)
                             {
-                                let m = Process.getModuleByName(soname)
-                                console.log(JSON.stringify(m))
+                                let m = Process.getModuleByName(soname);
+                                (globalThis as any). console.log(JSON.stringify(m))
                                 let sp = this.context.sp;
                                 for(let t=0; t<40;t++){
                                     let pp = sp.add(t*Process.pointerSize).readPointer();
                                     if(pp.compare(m.base)>=0 && pp.compare(m.base.add(m.size)) <0){
-                                        console.log(t, pp, pp.sub(m.base))
+                                        (globalThis as any). console.log(t, pp, pp.sub(m.base))
                                     }
                                 }
                             }
@@ -208,13 +207,13 @@ export const hookRegisterNatives = (clzname?:string, soname?:string, handles?:{[
                             var find_module=Process.findModuleByAddress(fnPtr_ptr);
                             if(clzname){
                                 if(class_name.includes(clzname)){
-                                    console.log("[RegisterNatives] java_class:", class_name, "name:", name, "sig:", sig, "fnPtr:", fnPtr_ptr, JSON.stringify(find_module));
+                                    (globalThis as any). console.log("[RegisterNatives] java_class:", class_name, "name:", name, "sig:", sig, "fnPtr:", fnPtr_ptr, JSON.stringify(find_module));
                                     if(name && handles!=undefined){
                                         if (Object.keys(handles).indexOf(name)>=0){
                                             let h = handles[name]
                                             if(h){
                                                 Interceptor.attach(fnPtr_ptr,h);
-                                                console.log(name,'attached');
+                                                (globalThis as any). console.log(name,'attached');
                                             }
                                         }
                                     }
@@ -222,11 +221,11 @@ export const hookRegisterNatives = (clzname?:string, soname?:string, handles?:{[
                             }
                             else{
                                 if (soname!=undefined){
-                                    let m = Process.getModuleByName(soname)
-                                    console.log("[RegisterNatives] java_class:", class_name, "name:", name, "sig:", sig, "fnPtr:", fnPtr_ptr, 'offset', fnPtr_ptr.sub(m.base));
+                                    let m = Process.getModuleByName(soname);
+                                    (globalThis as any). console.log("[RegisterNatives] java_class:", class_name, "name:", name, "sig:", sig, "fnPtr:", fnPtr_ptr, 'offset', fnPtr_ptr.sub(m.base));
                                 }
                                 else{
-                                    console.log("[RegisterNatives] java_class:", class_name, "name:", name, "sig:", sig, "fnPtr:", fnPtr_ptr);
+                                    (globalThis as any). console.log("[RegisterNatives] java_class:", class_name, "name:", name, "sig:", sig, "fnPtr:", fnPtr_ptr);
                                 }
                             }
                         }
@@ -237,7 +236,7 @@ export const hookRegisterNatives = (clzname?:string, soname?:string, handles?:{[
         })
         return ;
     }
-    console.log('can not found RegisterNativates function')
+    (globalThis as any). console.log('can not found RegisterNativates function')
 }
 
 export const copyfile = (fn: string, dfn:string):void=>{
@@ -264,7 +263,7 @@ export const copyfile = (fn: string, dfn:string):void=>{
         fileOutputStream.close();
     }
     else {
-        console.log('Error : File cannot read.')
+        (globalThis as any). console.log('Error : File cannot read.')
     }
 }
 
@@ -275,7 +274,7 @@ export const listAllAssetFiles = ():void=>{
             if(assetsList.length==0){
                 // is a file
                 let f = assets_manager.open(path);
-                console.log('path', path, f.available());
+                (globalThis as any). console.log('path', path, f.available());
                 //let bufflen = 0x1000;
                 //let  buffer = Java.array('byte', new Array(bufflen).fill(0));
                 //let memory = Memory.alloc(bufflen);
@@ -285,7 +284,7 @@ export const listAllAssetFiles = ():void=>{
                 //        memory.add(t).writeS8(buffer[t]);
                 //    }
                 //    fridautils.dumpMemory(memory)
-                //    console.log(x);
+                //    (globalThis as any). console.log(x);
                 //}
                 f.close();
             }
@@ -298,13 +297,13 @@ export const listAllAssetFiles = ():void=>{
         }
         catch(e){
             // path is a file
-            console.log(e);
+            (globalThis as any). console.log(e);
         }
-        // console.log('asserts', JSON.stringify(assetsList))
+        // (globalThis as any). console.log('asserts', JSON.stringify(assetsList))
     }
     let current_application = Java.use('android.app.ActivityThread').currentApplication();
     var context = current_application.getApplicationContext();
-    console.log('current_appliction', current_application);
+    (globalThis as any). console.log('current_appliction', current_application);
     let assets_manager = context.getAssets();
     listAssetFiles(assets_manager,'');
 }
@@ -447,7 +446,7 @@ info.has_DT_SYMBOLIC     = p.add(offset).readU8()                 ; offset += 0x
 
 
 export const printJavaTraceStack = ()=>{
-    console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Exception").$new()))
+    (globalThis as any). console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Exception").$new()))
 }
 
 export const convertByteArrayToString = (ret:any)=>{
@@ -466,8 +465,8 @@ export const describeJavaClassName = (className:string)=> {
 
 
 export const describeJavaClass = (jClass:any)=> {
-    console.log('jClass', jClass, JSON.stringify(jClass));
-    console.log(JSON.stringify({
+    (globalThis as any). console.log('jClass', jClass, JSON.stringify(jClass));
+    (globalThis as any). console.log(JSON.stringify({
         _all_methods: Object.getOwnPropertyNames(jClass.__proto__).filter(m => {
           return !m.startsWith('$') // filter out Frida related special properties
              || m == 'class' || m == 'constructor' // optional
@@ -485,7 +484,7 @@ export const describeJavaClass = (jClass:any)=> {
 export const showLoaders = () =>{
     Java.enumerateClassLoaders({
         onMatch:function(loader){
-            console.log('loader', loader)
+            (globalThis as any). console.log('loader', loader)
         },
         onComplete:function(){},
     })
@@ -494,7 +493,7 @@ export const showLoaders = () =>{
 export const showJavaClasses = ()=>{
     Java.enumerateLoadedClasses({
         onMatch(name, handle) {
-            console.log('name', name, handle)
+            (globalThis as any). console.log('name', name, handle)
             
         },
         onComplete() {
@@ -510,14 +509,14 @@ export const dumpHashMap = (hs:any, show?:boolean): {[key:string]:string} => {
     let m :{[key:string]:string}  =  {}
     if(hs==null) return m;
 
-    console.log('hs0', hs, JSON.stringify(hs))
-    hs = JavaCast(hs, getClassName(hs))
-    console.log('hs1', hs, JSON.stringify(hs))
+    (globalThis as any). console.log('hs0', hs, JSON.stringify(hs));
+    hs = JavaCast(hs, getClassName(hs));
+    (globalThis as any). console.log('hs1', hs, JSON.stringify(hs));
     var hashMapNode = Java.use('java.util.Map$Node');
     var iterator = hs.entrySet().iterator();
     while(iterator.hasNext()){
         var entry = Java.cast(iterator.next(),hashMapNode);
-        if(show) { console.log(entry.getKey(),'#', entry.getValue()) }
+        if(show) { (globalThis as any). console.log(entry.getKey(),'#', entry.getValue()) }
         m[entry.getKey()] =  entry.getValue().toString();
     }
     return m;
@@ -536,10 +535,10 @@ export const showAndroidToast = (t:string) =>{
 
 export const bypasSSLPinning = ()=>{
     Java.perform(function () {
-        console.log('')
-        console.log('===')
-        console.log('* Injecting hooks into common certificate pinning methods *')
-        console.log('===')
+        (globalThis as any). console.log('')
+        (globalThis as any). console.log('===')
+        (globalThis as any). console.log('* Injecting hooks into common certificate pinning methods *')
+        (globalThis as any). console.log('===')
     
         var X509TrustManager = Java.use('javax.net.ssl.X509TrustManager');
         var SSLContext = Java.use('javax.net.ssl.SSLContext');
@@ -565,73 +564,73 @@ export const bypasSSLPinning = ()=>{
             '[Ljavax.net.ssl.KeyManager;', '[Ljavax.net.ssl.TrustManager;', 'java.security.SecureRandom'
         );
         SSLContext_init.implementation = function (keyManager:any, trustManager:any, secureRandom:any) {
-            console.log('! Intercepted trustmanager request');
+            (globalThis as any). console.log('! Intercepted trustmanager request');
             SSLContext_init.call(this, keyManager, TrustManagers, secureRandom);
         };
     
-        console.log('* Setup custom trust manager');
+        (globalThis as any). console.log('* Setup custom trust manager');
     
         // okhttp3
         try {
             var CertificatePinner = Java.use('okhttp3.CertificatePinner');
             CertificatePinner.check.overload('java.lang.String', 'java.util.List').implementation = function (str:any) {
-                console.log('! Intercepted okhttp3: ' + str);
+                (globalThis as any). console.log('! Intercepted okhttp3: ' + str);
                 return;
             };
     
-            console.log('* Setup okhttp3 pinning')
+            (globalThis as any). console.log('* Setup okhttp3 pinning')
         } catch(err) {
-            console.log('* Unable to hook into okhttp3 pinner')
+            (globalThis as any). console.log('* Unable to hook into okhttp3 pinner')
         }
     
         // trustkit
         try {
             var Activity = Java.use("com.datatheorem.android.trustkit.pinning.OkHostnameVerifier");
             Activity.verify.overload('java.lang.String', 'javax.net.ssl.SSLSession').implementation = function (str:any) {
-                console.log('! Intercepted trustkit{1}: ' + str);
+                (globalThis as any). console.log('! Intercepted trustkit{1}: ' + str);
                 return true;
             };
     
             Activity.verify.overload('java.lang.String', 'java.security.cert.X509Certificate').implementation = function (str:any) {
-                console.log('! Intercepted trustkit{2}: ' + str);
+                (globalThis as any). console.log('! Intercepted trustkit{2}: ' + str);
                 return true;
             };
     
-            console.log('* Setup trustkit pinning')
+            (globalThis as any). console.log('* Setup trustkit pinning')
         } catch(err) {
-            console.log('* Unable to hook into trustkit pinner')
+            (globalThis as any). console.log('* Unable to hook into trustkit pinner')
         }
     
         // TrustManagerImpl
         try {
             var TrustManagerImpl = Java.use('com.android.org.conscrypt.TrustManagerImpl');
             TrustManagerImpl.verifyChain.implementation = function (untrustedChain:any, trustAnchorChain:any, host:any, clientAuth:any, ocspData:any, tlsSctData:any) {
-                console.log('! Intercepted TrustManagerImp: ' + host);
+                (globalThis as any). console.log('! Intercepted TrustManagerImp: ' + host);
                 return untrustedChain;
-            }
+            };
     
-            console.log('* Setup TrustManagerImpl pinning')
+            (globalThis as any). console.log('* Setup TrustManagerImpl pinning')
         } catch (err) {
-            console.log('* Unable to hook into TrustManagerImpl')
+            (globalThis as any). console.log('* Unable to hook into TrustManagerImpl')
         }
     
         // Appcelerator
         try {
             var PinningTrustManager = Java.use('appcelerator.https.PinningTrustManager');
             PinningTrustManager.checkServerTrusted.implementation = function () {
-                console.log('! Intercepted Appcelerator');
-            }
+                (globalThis as any). console.log('! Intercepted Appcelerator');
+            };
     
-            console.log('* Setup Appcelerator pinning')
+            (globalThis as any). console.log('* Setup Appcelerator pinning')
         } catch (err) {
-            console.log('* Unable to hook into Appcelerator pinning')
+            (globalThis as any). console.log('* Unable to hook into Appcelerator pinning')
         }
         
         // ByPass SSL pinning for Android 7+
         var array_list = Java.use("java.util.ArrayList");
         var ApiClient = Java.use('com.android.org.conscrypt.TrustManagerImpl');
         ApiClient.checkTrustedRecursive.implementation = function(a1:any,a2:any,a3:any,a4:any,a5:any,a6:any) {
-            console.log('Bypassing SSL Pinning');
+            (globalThis as any). console.log('Bypassing SSL Pinning');
             var k = array_list.$new();
             return k;
         }
@@ -639,7 +638,7 @@ export const bypasSSLPinning = ()=>{
         // Force mode debug for all webview
         var WebView = Java.use('android.webkit.WebView');
         WebView.loadUrl.overload("java.lang.String").implementation = function (s:any) {
-            console.log('Enable webview debug for URL: '+s.toString());
+            (globalThis as any). console.log('Enable webview debug for URL: '+s.toString());
             this.setWebContentsDebuggingEnabled(true);
             this.loadUrl.overload("java.lang.String").call(this, s);
         };
@@ -650,16 +649,16 @@ export const bypasSSLPinning = ()=>{
 export const findJavaClasses = (clzname:string, show?:boolean):string[] =>{ 
     let clzs : string [] = []
     show = show??true;
-    if(show) console.log('begin find class with ', clzname);                                                                                 
+    if(show) (globalThis as any). console.log('begin find class with ', clzname);                                                                                 
     Java.enumerateLoadedClasses({                                                                                                       
         onMatch(name, handle) {                                                                                                         
             if (name.includes(clzname)){                                                                                                
-                if(show)  console.log(name, handle)                                                                                               
+                if(show)  (globalThis as any). console.log(name, handle)                                                                                               
                 clzs.push(name)
             }                                                                                                                           
         },                                                                                                                              
         onComplete() {                                                                                                                  
-            if(show)console.log('find classes finished ')                                                                                       
+            if(show)(globalThis as any). console.log('find classes finished ')                                                                                       
         },                                                                                                                              
     });                                                                                                                                 
     return clzs;
@@ -678,8 +677,8 @@ export const findJavaClasses = (clzname:string, show?:boolean):string[] =>{
 */
 
 export let bypasSSLPinningWithoutRegisterClasses = () => {
-    	console.log("");
-	    console.log("[.] Cert Pinning Bypass/Re-Pinning");
+    	(globalThis as any). console.log("");
+	    (globalThis as any). console.log("[.] Cert Pinning Bypass/Re-Pinning");
 
 	    var CertificateFactory = Java.use("java.security.cert.CertificateFactory");
 	    var FileInputStream = Java.use("java.io.FileInputStream");
@@ -690,14 +689,14 @@ export let bypasSSLPinningWithoutRegisterClasses = () => {
 	    var SSLContext = Java.use("javax.net.ssl.SSLContext");
 
 	    // Load CAs from an InputStream
-	    console.log("[+] Loading our CA...")
+	    (globalThis as any). console.log("[+] Loading our CA...")
 	    var cf = CertificateFactory.getInstance("X.509");
 	    
 	    try {
 	    	var fileInputStream = FileInputStream.$new("/data/local/tmp/cert-der.crt");
 	    }
 	    catch(err) {
-	    	console.log("[o] " + err);
+	    	(globalThis as any). console.log("[o] " + err);
 	    }
 	    
 	    var bufferedInputStream = BufferedInputStream.$new(fileInputStream);
@@ -705,29 +704,29 @@ export let bypasSSLPinningWithoutRegisterClasses = () => {
 	    bufferedInputStream.close();
 
 		var certInfo = Java.cast(ca, X509Certificate);
-	    console.log("[o] Our CA Info: " + certInfo.getSubjectDN());
+	    (globalThis as any). console.log("[o] Our CA Info: " + certInfo.getSubjectDN());
 
 	    // Create a KeyStore containing our trusted CAs
-	    console.log("[+] Creating a KeyStore for our CA...");
+	    (globalThis as any). console.log("[+] Creating a KeyStore for our CA...");
 	    var keyStoreType = KeyStore.getDefaultType();
 	    var keyStore = KeyStore.getInstance(keyStoreType);
 	    keyStore.load(null, null);
 	    keyStore.setCertificateEntry("ca", ca);
 	    
 	    // Create a TrustManager that trusts the CAs in our KeyStore
-	    console.log("[+] Creating a TrustManager that trusts the CA in our KeyStore...");
+	    (globalThis as any). console.log("[+] Creating a TrustManager that trusts the CA in our KeyStore...");
 	    var tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
 	    var tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
 	    tmf.init(keyStore);
-	    console.log("[+] Our TrustManager is ready...");
+	    (globalThis as any). console.log("[+] Our TrustManager is ready...");
 
-	    console.log("[+] Hijacking SSLContext methods now...")
-	    console.log("[-] Waiting for the app to invoke SSLContext.init()...")
+	    (globalThis as any). console.log("[+] Hijacking SSLContext methods now...")
+	    (globalThis as any). console.log("[-] Waiting for the app to invoke SSLContext.init()...")
 
 	   	SSLContext.init.overload("[Ljavax.net.ssl.KeyManager;", "[Ljavax.net.ssl.TrustManager;", "java.security.SecureRandom").implementation = function(a:any,b:any,c:any) {
-	   		console.log("[o] App invoked javax.net.ssl.SSLContext.init...");
+	   		(globalThis as any). console.log("[o] App invoked javax.net.ssl.SSLContext.init...");
 	   		SSLContext.init.overload("[Ljavax.net.ssl.KeyManager;", "[Ljavax.net.ssl.TrustManager;", "java.security.SecureRandom").call(this, a, tmf.getTrustManagers(), c);
-	   		console.log("[+] SSLContext initialized with our custom TrustManager!");
+	   		(globalThis as any). console.log("[+] SSLContext initialized with our custom TrustManager!");
 	   	}
     }
 
@@ -786,20 +785,20 @@ export const hookJavaFunction = (t:HookJavaFuncType) => {
         hit ++;
         let args = arguments; // can tramper arguments
         if(maxhit<0 || maxhit>=hit){
-            if(!hide){ console.log(getLevelString(),'>',t.clzname, t.methodName, t.argsList, JSON.stringify(arguments)); }
+            if(!hide){ (globalThis as any). console.log(getLevelString(),'>',t.clzname, t.methodName, t.argsList, JSON.stringify(arguments)); }
             ginfo.level++;
             let tstr = getLevelString();
             if(t.enterFun!=undefined){ 
                 let targs = t.enterFun(tstr,this, argsList, ...args);
                 if(targs!=undefined){
                     args=targs;
-                    if(!hide){ console.log(tstr, '>',t.clzname, t.methodName, t.argsList, JSON.stringify(args)); }
+                    if(!hide){ (globalThis as any). console.log(tstr, '>',t.clzname, t.methodName, t.argsList, JSON.stringify(args)); }
                 }
             }
             if(dumpStack){ 
-                console.log(tstr, 'Java call stack')
+                (globalThis as any). console.log(tstr, 'Java call stack')
                 getJavaCallStack().slice(3).forEach(t=>{
-                    console.log(tstr, `  ${t.clzName}.${t.methodName}(${t.fileName}:${t.lineNumber})`);
+                    (globalThis as any). console.log(tstr, `  ${t.clzName}.${t.methodName}(${t.fileName}:${t.lineNumber})`);
                 })
             }
         }
@@ -815,11 +814,11 @@ export const hookJavaFunction = (t:HookJavaFuncType) => {
         if(maxhit<0 || maxhit>=hit){
             let tstr = getLevelString();
             ginfo.level--;
-            if(!hide){ console.log( '  '.repeat(ginfo.level), '<',t.clzname, t.methodName, ret); }
+            if(!hide){ (globalThis as any). console.log( '  '.repeat(ginfo.level), '<',t.clzname, t.methodName, ret); }
             if(t.leaveFun!=undefined){
                 let tret = t.leaveFun(tstr, this, argsList, ret, ...args, argsList) 
                 if(tret!=undefined){
-                    { console.log(getLevelString(), 'mod return vaule =>',tret); }
+                    { (globalThis as any). console.log(getLevelString(), 'mod return vaule =>',tret); }
                     return tret;
                 } 
             }
@@ -847,20 +846,20 @@ export const byteArray2Python = (ba:any) => {
 
 export const sendCurrentActivityOrientationToLandscape = () =>{
     let activityClassName = getCurrentActivityClassName();
-    console.log('activity class name', activityClassName);
+    (globalThis as any). console.log('activity class name', activityClassName);
     Java.choose(activityClassName,{
         onComplete() {
-            console.log('ok')
+            (globalThis as any). console.log('ok')
         },
         onMatch(instance) {
-            console.log('instance', instance)
+            (globalThis as any). console.log('instance', instance)
             instance.setRequestedOrientation(Java.use('android.content.pm.ActivityInfo').SCREEN_ORIENTATION_LANDSCAPE.value);
         },
     })
 }
 
 export const executeCommandNative = (command:string) => {
-    console.log('execuate command native ', command)
+    (globalThis as any). console.log('execuate command native ', command)
     const libc = Process.getModuleByName("libc.so");
 
     // Define the popen function signature
@@ -891,7 +890,7 @@ export const executeCommandNative = (command:string) => {
     for (let t = 0; t < 100; t++) {
         let read = fgetsFunc(line, lineBufferSize - 1, commandOutputPtr);
         if (read.isNull()) break;
-        console.log(line.readUtf8String());
+        (globalThis as any). console.log(line.readUtf8String());
     }
 
     // Close the command pipe
@@ -900,7 +899,7 @@ export const executeCommandNative = (command:string) => {
 }
 
 export const executeShellCommand = (cmd:string) => {
-    console.log(`execute  ${cmd}`)
+    (globalThis as any). console.log(`execute  ${cmd}`)
     var result = "";
     var BufferedReader = Java.use("java.io.BufferedReader");
     var InputStreamReader = Java.use("java.io.InputStreamReader");
@@ -916,7 +915,7 @@ export const executeShellCommand = (cmd:string) => {
         }
         bufferedReader.close();
     } catch (e) {
-        console.log(e);
+        (globalThis as any). console.log(e);
     }
 
     return result;
@@ -1026,10 +1025,10 @@ export const drawLine = (startX: number, startY: number, endX: number, endY: num
                 implements: [Callback],
                 methods: {
                     surfaceChanged: function(holder, format, width, height) {
-                        console.log('Surface changed');
+                        (globalThis as any). console.log('Surface changed');
                     },
                     surfaceCreated: function(holder) {
-                        console.log('Surface created');
+                        (globalThis as any). console.log('Surface created');
                         let canvas = holder.lockCanvas();
                         let paintClass = Java.use('android.graphics.Paint');
                         let paint = paintClass.$new();
@@ -1043,7 +1042,7 @@ export const drawLine = (startX: number, startY: number, endX: number, endY: num
                         holder.unlockCanvasAndPost(canvas);
                     },
                     surfaceDestroyed: function(holder) {
-                        console.log('Surface destroyed');
+                        (globalThis as any). console.log('Surface destroyed');
                     }
                 }
             });
@@ -1066,11 +1065,11 @@ export const drawLine = (startX: number, startY: number, endX: number, endY: num
 export const getScreenPosition = (widget: any) => {
     let location = Java.use('android.graphics.Rect').$new();
     widget.getWindowVisibleDisplayFrame(location);
-    console.log('location', location, JSON.stringify(location));
+    (globalThis as any). console.log('location', location, JSON.stringify(location));
     let X = widget.getX();
     let Y = widget.getY();
-    console.log('X', X, JSON.stringify(X));
-    console.log('Y', Y, JSON.stringify(Y));
+    (globalThis as any). console.log('X', X, JSON.stringify(X));
+    (globalThis as any). console.log('Y', Y, JSON.stringify(Y));
     let x = location.left.value + widget.getX();
     let y = location.top.value + widget.getY();
     return { x: x, y: y };
@@ -1221,7 +1220,7 @@ export const listJavaClassMethods = (className: string, show?:boolean): Method[]
             argTypes.push(params[i].getName());
         }
         const info = { name, returnType, argTypes, modifiers };
-        if(show) console.log(className, 'method', JSON.stringify(info))
+        if(show) (globalThis as any). console.log(className, 'method', JSON.stringify(info))
         classMethods.push(info);
     });
 
@@ -1239,7 +1238,7 @@ export const listPermissions = () => {
     const packageInfo = packageManager.getPackageInfo(packageName, value);
   
     const permissions = packageInfo.requestedPermissions.value;
-    console.log('Permissions:', permissions, JSON.stringify(permissions));
+    (globalThis as any). console.log('Permissions:', permissions, JSON.stringify(permissions));
 }
 
 export interface Field {
@@ -1259,7 +1258,7 @@ export const listJavaClassFields = (clazzName: string, show?:boolean) : Field[] 
         const name: string = field.getName();
         const type: string = field.getType().getName();
         const info =  {name,type, modifiers};
-        if(show) {console.log(JSON.stringify(info))}
+        if(show) {(globalThis as any). console.log(JSON.stringify(info))}
         rets.push(info);
     }
     return rets;
@@ -1288,7 +1287,7 @@ export const listHashMap = (hs:any, show?:boolean): {[key:string]:string} => {
     while(iterator.hasNext()){
         var entry =  iterator.next();
         entry = JavaCast(entry, getClassName(entry))
-        if(show) { console.log(entry.getKey(),'#', entry.getValue()) }
+        if(show) { (globalThis as any). console.log(entry.getKey(),'#', entry.getValue()) }
         m[entry.getKey()] =  entry.getValue().toString();
     }
     return m;
@@ -1309,7 +1308,7 @@ export const hookMethodsInClass = (clzname:string, opts?:any)=>{
 
             if(opts) { info = {... info, ... opts}; }
 
-            console.log('hooking', clzname, 'method', m, JSON.stringify(m), JSON.stringify(info))
+            (globalThis as any). console.log('hooking', clzname, 'method', m, JSON.stringify(m), JSON.stringify(info))
             hookJavaFunction(info)
         })
 }
@@ -1318,8 +1317,8 @@ export const exitAndroidApp = ()=>{
      // Get the current activity's instance
      var currentActivity = getCurrentActivity();
  
-     // Print the result to the console
-     console.log('current activity', currentActivity);
+     // Print the result to the (globalThis as any). console
+     (globalThis as any). console.log('current activity', currentActivity);
      if(currentActivity!=null) currentActivity.finish();
 
      Java.use('java.lang.System').exit(0);
@@ -1332,10 +1331,10 @@ export const getIterateArray = (list:any, show?:boolean):string[] => {
     while (it.hasNext()) {
         let  item = it.next();
         let s = item.toString();
-        if(show) console.log(s)
+        if(show) (globalThis as any). console.log(s)
         ret.push(s)
         //let obj = JavaCast(item, 'com.miui.analytics.a.a.a')
-        //console.log(obj);
+        //(globalThis as any). console.log(obj);
     }
     return ret;
 }
@@ -1356,7 +1355,7 @@ export const dumpByteArray = (byteArray: any) => {
     uint8Array.forEach((byte, index) => {
         memory.add(index).writeU8(byte);
     });
-    dumpMemory(memory, byteArrayLength);
+    Utils.dumpMemory(memory, byteArrayLength);
 }
 
 
@@ -1501,7 +1500,7 @@ export const iterateSet = (set: any, cb?:(e:any)=>boolean)=>{
     const JavaSet =Java.use('java.util.Set')
     set = set as typeof JavaSet;
     cb = cb ?? function(e:any){
-        console.log('element', e);
+        (globalThis as any). console.log('element', e);
         return true;
     }
     const size = set.size();
@@ -1515,7 +1514,7 @@ export const iterateSet = (set: any, cb?:(e:any)=>boolean)=>{
 const JavaList =Java.use('java.util.List')
 export const iterateList = (list: typeof JavaList, cb?:(e:any, idx:number)=>boolean)=>{
     cb = cb ?? function(e:any, idx:number){
-        console.log(idx, 'element', e);
+        (globalThis as any). console.log(idx, 'element', e);
         return true;
     }
     const size = list.size();
@@ -1531,4 +1530,6 @@ export const getAndroidVersioninfo = ()=>{
         apiVersion: Java.use('android.os.Build$VERSION').SDK_INT.value,
         androidVersion: Java.use('android.os.Build$VERSION').RELEASE.value,
     }
+}
+
 }

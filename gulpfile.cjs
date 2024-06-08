@@ -4,6 +4,20 @@ const ts = require('gulp-typescript');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
 
+const { exec } = require('child_process');
+
+gulp.task('tspc', function(done) {
+    exec('./node_modules/.bin/tspc', function(err, stdout, stderr) {
+        console.log(stdout);
+        console.log(stderr);
+        if (err) {
+            return done(err); // if error happened, exit with an error status
+        }
+        done(); // finished task
+    });
+});
+
+
 gulp.task('rename', function(){
   return gulp.src('dist/bin/*.js')  // This will get all .js files in src and its sub-directories
     .pipe(rename(function(path) {
@@ -59,5 +73,5 @@ gulp.task('copyDirectories', done => {
   done();
 });
 
-gulp.task('default', gulp.series('compile',  'copyFiles', 'copyDirectories', ));
+gulp.task('default', gulp.series('tspc', 'copyFiles', 'copyDirectories', ));
 

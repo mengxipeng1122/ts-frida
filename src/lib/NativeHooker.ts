@@ -1,10 +1,9 @@
 
 
 
-//////////////////////////////////////////////////
+namespace NativeHook{
 
-import { basename } from "path";
-import { dumpMemory, showBacktrace } from "./utils";
+//////////////////////////////////////////////////
 
 // this object records all runtime info related hook
 /**
@@ -298,12 +297,12 @@ export class HookFunAction extends HookAction {
             for (let t = 0; t < nparas; t++) {
                 targs.push(args[t].toString());
             }
-            console.log(tstr, 'enter', JSON.stringify(name), ' (', targs.join(','), ')');
+            ( globalThis as any ). console .log(tstr, 'enter', JSON.stringify(name), ' (', targs.join(','), ')');
         };
 
         // Function to be called when the function is left
         let showLeave = function(retval: NativePointer, tstr: string, thiz: InvocationContext) {
-            console.log(HookFunAction.getLevelStr(), 'leave', JSON.stringify(name), retval);
+            ( globalThis as any ). console .log(HookFunAction.getLevelStr(), 'leave', JSON.stringify(name), retval);
         }
 
         // Attach an interceptor to the function
@@ -327,15 +326,15 @@ export class HookFunAction extends HookAction {
                                 if (checkMemory) {
                                     let range = Process.findRangeByAddress(param);
                                     if (range) {
-                                        dumpMemory(param);
+                                        Utils.dumpMemory(param);
                                     }
                                 } else if (!param.isNull() && param.compare(0x100000) > 0) {
-                                    dumpMemory(param);
+                                    Utils.dumpMemory(param);
                                 }
                             }
                         }
                         if (showCallStack) {
-                            showBacktrace(this);
+                            Utils.showBacktrace(this);
                         }
                     }
                     if (enterFun) enterFun(args, HookFunAction.getLevelStr(), this);
@@ -385,7 +384,7 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
     // Check if the library is already loaded
     let m  = Process.findModuleByName(soname);
     if(m!=null) {
-        console.log(soname, 'loaded')
+        ( globalThis as any ). console .log(soname, 'loaded')
         // If the library is already loaded, call the afterFun immediately
         afterFun();
         return;
@@ -417,7 +416,7 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
                     // Read the loadpath from the arguments
                     this.loadpath = fun.isUtf8 ? args[0].readUtf8String() : args[0].readUtf16String();
                     // If the loadpath is the specified library and beforeFun is not called yet, call it
-                    if (basename(this.loadpath) == soname && !beforeDone) {
+                    if (Utils.basename(this.loadpath) == soname && !beforeDone) {
                         if (beforeFun) beforeFun();
                         beforeDone = true;
                     }
@@ -425,7 +424,7 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
                 onLeave: function (retval) {
                     const loadedModulePath = this.loadpath;
                     // If the return value is not 0, the library is loaded successfully
-                    if (!afterDone && retval.toUInt32() != 0 && basename(loadedModulePath) == soname) {
+                    if (!afterDone && retval.toUInt32() != 0 && Utils.basename(loadedModulePath) == soname) {
                         afterFun();
                         afterDone = true;
                     }
@@ -442,3 +441,4 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
 
 
 
+}

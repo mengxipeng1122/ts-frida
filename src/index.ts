@@ -1,6 +1,53 @@
+/// <reference path="./lib/AndroidAPI.ts">/>
+/// <reference path="./lib/ELF.ts">/>
+/// <reference path="./lib/NativeHooker.ts">/>
+/// <reference path="./lib/utils.ts">/>
+/// <reference path="./lib/miniz.ts">/>
 
-export * from './lib/utils'
-export * from './lib/ELF'
-export * from './lib/NativeHooker'
-export * from './nativeLib/miniz'
+/// <reference path="./lib/frida-il2cpp-bridge/utils/android.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/console.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/decorate.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/getter.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/lazy.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/native-struct.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/native-wait.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/offset-of.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/read-native-iterator.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/read-native-list.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/recycle.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/utils/unity-version.ts">/>
 
+/// <reference path="./lib/frida-il2cpp-bridge/api.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/application.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/dump.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/exception-listener.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/filters.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/gc.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/memory.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/module.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/perform.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/tracer.ts">/>
+
+/// <reference path="./lib/frida-il2cpp-bridge/structs/array.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/assembly.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/class.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/delegate.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/domain.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/field.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/gc-handle.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/image.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/memory-snapshot.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/method.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/object.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/parameter.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/pointer.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/reference.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/string.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/thread.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/type.ts">/>
+/// <reference path="./lib/frida-il2cpp-bridge/structs/value-type.ts">/>
+
+globalThis.Il2Cpp = Il2Cpp;
+globalThis.Utils  = Utils;
+globalThis.ELF    = ELF;
+globalThis.Android= Android;
