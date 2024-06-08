@@ -1,8 +1,6 @@
 
 import 'ts-frida'
 
-namespace Patch {
-
 let base = ptr(0); // avoid frida free allocated buffer 
 
 const mod_init  = (base:NativePointer)=>{
@@ -110,6 +108,3 @@ export const mod  = {
 
 }
 
-}
-
-// (globalThis as any).Patch = Patch;
