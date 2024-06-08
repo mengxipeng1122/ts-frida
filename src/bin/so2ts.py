@@ -109,7 +109,7 @@ def handle_ELF(info, binary, no_content=False):
                 address = address if isinstance(address, str) else hex(address)
                 code    = f'base.add({address}).writePointer(base.add({offset}));'
             else:
-                code    = f"base.add({hex(address)}).writePointer(resolveSymbol('{sym_name}', libs, syms));"
+                code    = f"base.add({hex(address)}).writePointer(Utils.resolveSymbol('{sym_name}', libs, syms));"
         else:
             raise Exception(f'unhandled relocation type {typ}')
         info['patches'].append(code)
@@ -187,7 +187,7 @@ def handle_PE(info, binary, no_content=False):
         for tt,  entry in enumerate(imp.entries):
             address     = entry.iat_address;
             sym_name    = entry.name;
-            code        = f"base.add({hex(address)}).writePointer(resolveSymbol('{sym_name}', libs, syms));"
+            code        = f"base.add({hex(address)}).writePointer(Utils.resolveSymbol('{sym_name}', libs, syms));"
             patches.append(code)
     info['patches'] = patches
 
