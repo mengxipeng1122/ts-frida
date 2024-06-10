@@ -1,7 +1,8 @@
 
 
-namespace Miniz {
-export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:Utils.PATHLIB_INFO_TYPE) : string[] => {
+namespace MyFrida {
+
+export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_INFO_TYPE) : string[] => {
 
     if(libpatch.symbols.enumerateEntriesInZipfile == undefined) throw new Error('can not find enumerateEntries in libpatch');
 
@@ -25,7 +26,7 @@ export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:Utils.PAT
     
 }
 
-export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpatch:Utils.PATHLIB_INFO_TYPE) : ArrayBuffer | null => {
+export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpatch:PATHLIB_INFO_TYPE) : ArrayBuffer | null => {
     
 
     if(libpatch.symbols.readZipEntry == undefined) throw new Error('can not find readZipEntry in libpatch');

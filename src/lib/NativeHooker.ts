@@ -1,7 +1,7 @@
 
 
 
-namespace NativeHook{
+namespace  MyFrida {
 
 //////////////////////////////////////////////////
 
@@ -326,15 +326,15 @@ export class HookFunAction extends HookAction {
                                 if (checkMemory) {
                                     let range = Process.findRangeByAddress(param);
                                     if (range) {
-                                        Utils.dumpMemory(param);
+                                        dumpMemory(param);
                                     }
                                 } else if (!param.isNull() && param.compare(0x100000) > 0) {
-                                    Utils.dumpMemory(param);
+                                    dumpMemory(param);
                                 }
                             }
                         }
                         if (showCallStack) {
-                            Utils.showBacktrace(this);
+                            showBacktrace(this);
                         }
                     }
                     if (enterFun) enterFun(args, HookFunAction.getLevelStr(), this);
@@ -416,7 +416,7 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
                     // Read the loadpath from the arguments
                     this.loadpath = fun.isUtf8 ? args[0].readUtf8String() : args[0].readUtf16String();
                     // If the loadpath is the specified library and beforeFun is not called yet, call it
-                    if (Utils.basename(this.loadpath) == soname && !beforeDone) {
+                    if (basename(this.loadpath) == soname && !beforeDone) {
                         if (beforeFun) beforeFun();
                         beforeDone = true;
                     }
@@ -424,7 +424,7 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
                 onLeave: function (retval) {
                     const loadedModulePath = this.loadpath;
                     // If the return value is not 0, the library is loaded successfully
-                    if (!afterDone && retval.toUInt32() != 0 && Utils.basename(loadedModulePath) == soname) {
+                    if (!afterDone && retval.toUInt32() != 0 && basename(loadedModulePath) == soname) {
                         afterFun();
                         afterDone = true;
                     }

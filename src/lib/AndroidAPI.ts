@@ -1,6 +1,6 @@
 
 
-namespace Android {
+namespace MyFrida {
 
 
 const checkAndroidPlatform = ()=>{
@@ -185,7 +185,7 @@ export const hookRegisterNatives = (clzname?:string, soname?:string, handles?:{[
                         var method_count = args[3].toUInt32();
                         (globalThis as any). console.log('call RegisterNatives', args[0], args[1], args[2], args[3], args[4],)
                         (globalThis as any). console.log("this", JSON.stringify(this))
-                        Utils.dumpMemory(this.context.sp, 0x50)
+                        dumpMemory(this.context.sp, 0x50)
                         if(true){
                             if(soname!=undefined)
                             {
@@ -1355,7 +1355,7 @@ export const dumpByteArray = (byteArray: any) => {
     uint8Array.forEach((byte, index) => {
         memory.add(index).writeU8(byte);
     });
-    Utils.dumpMemory(memory, byteArrayLength);
+    dumpMemory(memory, byteArrayLength);
 }
 
 

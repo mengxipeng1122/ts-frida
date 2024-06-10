@@ -1,5 +1,5 @@
 
-namespace ELF {
+namespace MyFrida {
 
 interface ELF_FILE_HEADER {
     EI_MAGIC        : number,
@@ -188,7 +188,7 @@ export const getELFInfo = (fileBuffer: ArrayBuffer): { ndkVersion?: string, buil
 
 export const getELFInfoInModule = (moduleName:string): { ndkVersion?: string, buildId?: string } => {
     const modulePath = Process.getModuleByName(moduleName).path;
-    const fileBuffer = Utils.readFileData(modulePath);
+    const fileBuffer = readFileData(modulePath);
     return getELFInfo(fileBuffer);
 }
 

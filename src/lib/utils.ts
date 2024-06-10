@@ -1,7 +1,7 @@
 /* internal */
 
 
-namespace Utils {
+namespace MyFrida {
 /**
  * Dump memory contents starting from a given address.
  * 
