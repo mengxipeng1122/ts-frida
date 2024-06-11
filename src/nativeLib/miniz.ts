@@ -1,7 +1,6 @@
 
-import {
-    PATHLIB_INFO_TYPE,
-} from "../lib/utils"
+
+namespace MyFrida {
 
 export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_INFO_TYPE) : string[] => {
 
@@ -14,7 +13,7 @@ export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_I
                 return 0;
             },'int',['pointer']);
     const pzipfn = Memory.allocUtf8String(zipfn);
-    console.log('cb', cb, pzipfn);
+    (globalThis as any). console .log('cb', cb, pzipfn);
 
 
     const enumerateEntries = new NativeFunction(libpatch.symbols.enumerateEntriesInZipfile,
@@ -22,7 +21,7 @@ export const minizEnumerateEntriesInZipFile  = (zipfn:string, libpatch:PATHLIB_I
             pzipfn,
             cb,
         );
-    console.log('cb', cb);
+    (globalThis as any). console .log('cb', cb);
     return ret;
     
 }
@@ -50,5 +49,7 @@ export const minizReadEntryFromZipfile = (zipfn:string, entryname:string, libpat
     );
 
     return membuf.readByteArray(bytes_length)
+
+}
 
 }

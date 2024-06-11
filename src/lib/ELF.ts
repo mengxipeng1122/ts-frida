@@ -1,5 +1,5 @@
-import { readFileData } from "./utils";
 
+namespace MyFrida {
 
 interface ELF_FILE_HEADER {
     EI_MAGIC        : number,
@@ -192,3 +192,4 @@ export const getELFInfoInModule = (moduleName:string): { ndkVersion?: string, bu
     return getELFInfo(fileBuffer);
 }
 
+}

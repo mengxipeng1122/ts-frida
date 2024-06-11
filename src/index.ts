@@ -1,7 +1,7 @@
+/// <reference path="./lib/AndroidAPI.ts">/>
+/// <reference path="./lib/ELF.ts">/>
+/// <reference path="./lib/NativeHooker.ts">/>
+/// <reference path="./lib/utils.ts">/>
+/// <reference path="./nativeLib/miniz.ts">/>
 
-export * from './lib/utils'
-export * from './lib/ELF'
-export * from './lib/NativeHooker'
-//export * from './lib/frida-il2cpp-bridge/index'
-export * from './nativeLib/miniz'
-
+globalThis.MyFrida = MyFrida;

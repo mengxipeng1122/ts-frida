@@ -1,13 +1,7 @@
 
-import { 
-    MODINFO_BASETYPE, 
-    resolveSymbol,
-    readFileData,
-    PATHLIB_INFO_TYPE,
-} from 'ts-frida'
+import 'ts-frida'
 
 let base = ptr(0); // avoid frida free allocated buffer 
-
 
 const mod_init  = (base:NativePointer)=>{
     // initialize codes
@@ -21,13 +15,14 @@ const mod_deinit  = (base:NativePointer)=>{
     {% endfor %}
 }
 
-export let mod  = {
+
+export const mod  = {
 
 {% if info['mode'] == 'load' %}
     {% if info['no_content'] %}
-        load: (sopath:string, libs: (MODINFO_BASETYPE|string)[] =[], syms:{[key:string]:NativePointer} ={}, init:boolean=true):PATHLIB_INFO_TYPE=>{
+        load: (sopath:string, libs: (MyFrida.MODINFO_BASETYPE|string)[] =[], syms:{[key:string]:NativePointer} ={}, init:boolean=true):MyFrida.PATHLIB_INFO_TYPE=>{
     {% else %}
-        load: (libs: (MODINFO_BASETYPE|string)[] = [], syms:{[key:string]:NativePointer}={}, init:boolean=true):PATHLIB_INFO_TYPE=>{
+        load: (libs: (MyFrida.MODINFO_BASETYPE|string)[] = [], syms:{[key:string]:NativePointer}={}, init:boolean=true):MyFrida.PATHLIB_INFO_TYPE=>{
     {% endif %}
 
 
@@ -38,7 +33,7 @@ export let mod  = {
             ////////////////////////////////////////////////////////////////////////////////
             // load content
         {% if info['no_content'] %}
-            {% for t in  info['loads'] %}base.add({{t['virtual_address']}}).writeByteArray(readFileData(sopath, {{t['size']}}, {{t['file_offset']}}));
+            {% for t in  info['loads'] %}base.add({{t['virtual_address']}}).writeByteArray(MyFrida.readFileData(sopath, {{t['size']}}, {{t['file_offset']}}));
             {% endfor %}
         {% else %}
             {% for t in  info['loads'] %}base.add({{t['virtual_address']}}).writeByteArray([{{t['content_ts']}}]);
@@ -61,18 +56,18 @@ export let mod  = {
 
 {% elif info['mode'] == 'get' %}
     {% if 'name' in info and info['name'] | length >0 %}
-        get: (soname?:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):PATHLIB_INFO_TYPE=>{
+        get: (soname?:string, libs?: (MyFrida.MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):MyFrida.PATHLIB_INFO_TYPE=>{
             let name = '{{ info["name"]}}'; 
             if(soname!=undefined) name = soname;
     {% else %}
-        get: (soname:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):PATHLIB_INFO_TYPE=>{
+        get: (soname:string, libs?: (MyFrida.MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):MyFrida.PATHLIB_INFO_TYPE=>{
             let name = soname;
     {% endif %}
             base = Process.getModuleByName(name).base;
     {% endif %}
         
 
-            const ___info:PATHLIB_INFO_TYPE = {
+            const ___info:MyFrida.PATHLIB_INFO_TYPE = {
         {% if info['mode'] == 'load' %}
                 unload      : ()=>{
                     //unhook 
@@ -95,7 +90,7 @@ export let mod  = {
             {% endif %}
 
                 symbols     : {
-                    {% for k, v in  info['symbols'].items() %}{% if 'offset' in v %}{{k}}: base.add({{v['offset']}}),{% else %}{{k}}: Module.findExportByName(name, '{{k}}') ?? resolveSymbol('{{k}}', libs, syms),{% endif %}
+                    {% for k, v in  info['symbols'].items() %}{% if 'offset' in v %}{{k}}: base.add({{v['offset']}}),{% else %}{{k}}: Module.findExportByName(name, '{{k}}') ?? MyFrida.resolveSymbol('{{k}}', libs, syms),{% endif %}
                     {% endfor %}
                 },
 
@@ -112,3 +107,4 @@ export let mod  = {
         },
 
 }
+

@@ -1,32 +1,32 @@
 {
   "name": "ts-frida",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "This repository is frida library in typescript",
-  "sourceType": "module",
   "type": "module",
   "main": "dist/index.js",
-  "bin": {
-    "so2ts": "./dist/scripts/so2ts.cjs"
-  },
   "scripts": {
-    "build": "npx gulp",
-    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
-    "dist/**/*"
+    "dist"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mengxipeng1122/ts-frida.git"
+    "url": "https://github.com/vfsfitvnm/frida-il2cpp-bridge.git"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/mengxipeng1122/ts-frida/issues"
+  "license": "MIT",
+  "exports": "./dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "prettier": {
+    "arrowParens": "avoid",
+    "bracketSpacing": true,
+    "printWidth": 160,
+    "tabWidth": 4,
+    "trailingComma": "none"
   },
-  "homepage": "https://github.com/mengxipeng1122/ts-frida#readme",
   "devDependencies": {
     "@types/argparse": "^2.0.16",
     "@types/frida-gum": "^18.7.0",
@@ -41,7 +41,16 @@
   },
   "dependencies": {
     "gulp": "^5.0.0",
+    "gulp-rename": "^2.0.0",
     "gulp-replace": "^1.1.4",
-    "gulp-typescript": "^6.0.0-alpha.1"
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "ts-transformer-inline-file": "^0.2.0"
+  },
+  "overrides": {
+    "ts-transformer-inline-file": {
+      "typescript": "^5.0.0"
+    }
+  },
+  "dependencies": {
   }
 }

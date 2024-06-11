@@ -1,6 +1,7 @@
+/* internal */
 
 
-
+namespace MyFrida {
 /**
  * Dump memory contents starting from a given address.
  * 
@@ -8,7 +9,7 @@
  * @param l The number of bytes to dump. If not provided, defaults to 32 bytes.
  */
 export const dumpMemory = (p: NativePointer, l: number = 0x20): void => {
-    console.log(
+    (globalThis as any). console .log(
         hexdump(p, {
             offset: 0,
             length: l,
@@ -81,7 +82,7 @@ const _frida_log_callback = new NativeCallback(
      */
     function(sp: NativePointer): void {
         const message: string | null = sp.readUtf8String();
-        console.log(message);
+        (globalThis as any). console .log(message);
     },
     // Return type of the callback function.
     'void',
@@ -107,7 +108,7 @@ const _frida_err_callback = new NativeCallback(
      */
     function(sp: NativePointer, exitApp: number): void {
         const errorMessage: string | null = sp.readUtf8String();
-        console.error(errorMessage);
+        (globalThis as any). console .error(errorMessage);
         if (exitApp) {
             // Exit the application with an error code of -9.
             new NativeFunction(Module.getExportByName(null, 'exit'), 'int', ['int'])(-9);
@@ -123,7 +124,7 @@ const _frida_err_callback = new NativeCallback(
 );
 
 /**
- * Callback function for dumping memory to the console.
+ * Callback function for dumping memory to the (globalThis as any). console .
  *
  * @param {NativePointer} sp - Pointer to the memory to be dumped.
  * @param {number} sz - Size of the memory to be dumped.
@@ -132,14 +133,14 @@ const _frida_err_callback = new NativeCallback(
 const _frida_hexdump_callback = new NativeCallback(
     /**
      * Reads the specified amount of memory starting from the specified pointer,
-     * and dumps it to the console using the `dumpMemory` function.
+     * and dumps it to the (globalThis as any). console  using the `dumpMemory` function.
      *
      * @param {NativePointer} sp - Pointer to the memory to be dumped.
      * @param {number} sz - Size of the memory to be dumped.
      * @returns {void}
      */
     function(sp: NativePointer, sz: number): void {
-        // Dump the specified amount of memory starting from the specified pointer to the console.
+        // Dump the specified amount of memory starting from the specified pointer to the (globalThis as any). console .
         dumpMemory(sp, sz);
     },
     'void',
@@ -205,17 +206,17 @@ const _frida_inspect_ptr_callback = new NativeCallback(
  */
 export const frida_symtab = {
     /**
-     * NativeCallback that logs a message to the console but does not return anything.
+     * NativeCallback that logs a message to the (globalThis as any). console  but does not return anything.
      */
     _frida_dummy       :  _frida_dummy_callback         ,
 
     /**
-     * NativeCallback that logs a message to the console when called.
+     * NativeCallback that logs a message to the (globalThis as any). console  when called.
      */
     _frida_log         :  _frida_log_callback           ,
 
     /**
-     * NativeCallback that logs an error message to the console when called.
+     * NativeCallback that logs an error message to the (globalThis as any). console  when called.
      * If the exitApp flag is set, the program will exit with a non-zero status.
      */
     _frida_err         :  _frida_err_callback           ,
@@ -237,7 +238,7 @@ export const frida_symtab = {
 
 
 /**
- * Returns a dictionary of NativeCallbacks that log a message to the console
+ * Returns a dictionary of NativeCallbacks that log a message to the (globalThis as any). console 
  * when called. The keys of the dictionary are the names of the functions.
  *
  * @param {string[]} funs - The names of the functions to create callbacks for.
@@ -245,14 +246,14 @@ export const frida_symtab = {
  */
 export const frida_dummy_symtab = (funs: string[]): { [key: string]: NativeCallback<'void', []> } => {
     /**
-     * Returns a NativeCallback that logs a message to the console when called.
+     * Returns a NativeCallback that logs a message to the (globalThis as any). console  when called.
      *
      * @param {string} fn - The name of the function to log.
      * @returns {NativeCallback<'void',[]>} The NativeCallback.
      */
     const _frida_callback = (fn: string): NativeCallback<'void', []> => {
         return new NativeCallback(function () {
-            console.log('call dummy function', fn);
+            (globalThis as any). console .log('call dummy function', fn);
         }, 'void', []);
     }
 
@@ -276,7 +277,7 @@ export const showBacktrace = (thiz: InvocationContext, sobase?: NativePointer, t
     var callbacktrace = Thread.backtrace(thiz.context, Backtracer.ACCURATE);
     
     // Print the prefix string and the backtrace
-    console.log(tstr != undefined ? tstr : "", ' callbacktrace ' + callbacktrace);
+    (globalThis as any). console .log(tstr != undefined ? tstr : "", ' callbacktrace ' + callbacktrace);
     
     // Iterate over each address in the backtrace
     callbacktrace.forEach(c => {
@@ -285,7 +286,7 @@ export const showBacktrace = (thiz: InvocationContext, sobase?: NativePointer, t
         
         // Print the address, the difference between the address and the base address (if provided),
         // and the debug symbol
-        console.log(tstr != undefined ? tstr : "", c, "(", sobase != undefined ? c.sub(sobase) : "", ")", "=>", sym);
+        (globalThis as any). console .log(tstr != undefined ? tstr : "", c, "(", sobase != undefined ? c.sub(sobase) : "", ")", "=>", sym);
     });
 }
 
@@ -487,7 +488,7 @@ export function readFileData(fpath: string, sz?: number, offset: number = 0): Ar
         fseek(fp, offset, SEEK_SET);
         const read = fread(buf, 1, sz, fp);
         if (read.toNumber() !== sz) {
-            console.log(`error at read file ${fpath}, ${read}/${sz}`);
+            (globalThis as any). console .log(`error at read file ${fpath}, ${read}/${sz}`);
         }
         const ab = buf.readByteArray(sz);
         if (ab === null) {
@@ -537,7 +538,7 @@ export function readFileText(fpath: string): string {
         const buf = Memory.alloc(sz);
         const read = fread(buf, 1, sz, fp);
         if (read.toNumber() !== sz) {
-            console.log(`error at read file ${fpath}, ${read}/${sz}`);
+            (globalThis as any). console .log(`error at read file ${fpath}, ${read}/${sz}`);
         }
 
         // Read the string from the buffer
@@ -632,7 +633,7 @@ export const showAsmCode=(p:NativePointer, count?: number):void=>{
     for(var i = 0; i<count; i++){
         try{
             const inst = Instruction.parse(addr);
-            console.log(addr, inst.toString())
+            (globalThis as any). console .log(addr, inst.toString())
             addr = addr.add(inst.size);
         }
         catch {
@@ -643,14 +644,14 @@ export const showAsmCode=(p:NativePointer, count?: number):void=>{
 }
 
 export const findInstructInso=(wantinst:string, soname:string):void=>{
-    console.log('find', wantinst, 'in', soname)
+    (globalThis as any). console .log('find', wantinst, 'in', soname)
     let m = Process.getModuleByName(soname);
     let addr = m.base;
     do{
         try{
             let inst = Instruction.parse(addr);
             if(inst.mnemonic.toLowerCase().includes(wantinst)){
-                console.log(addr, inst.toString(),'@',m.name, addr.sub(m.base));
+                (globalThis as any). console .log(addr, inst.toString(),'@',m.name, addr.sub(m.base));
             }
             addr=addr.add(inst.size);
         }
@@ -658,7 +659,7 @@ export const findInstructInso=(wantinst:string, soname:string):void=>{
             addr=addr.add(2);
         }
     } while(addr.compare(m.base.add(m.size))<0);
-    console.log('end find', soname)
+    (globalThis as any). console .log('end find', soname)
 }
 
 export const getU32BigEndian=(p:NativePointer):number=>{
@@ -697,19 +698,19 @@ export const getInetAddrInfo=(addrinfo:NativePointer):string=>{
 export const dumpSoSymbols=(soname:string):void=>{
     let m  = Process.getModuleByName(soname);
     if(!m) throw `can not found so ${soname}`;
-    console.log(`found ${soname}`)
-    console.log(JSON.stringify(m));
+    (globalThis as any). console .log(`found ${soname}`)
+    (globalThis as any). console .log(JSON.stringify(m));
     m.enumerateExports()
         .forEach(e=>{
             let ee = Object.create(e);
             ee = {...e, offset : e.address.sub(m.base)};
-            console.log(JSON.stringify(ee))
+            (globalThis as any). console .log(JSON.stringify(ee))
         })
     m.enumerateSymbols()
         .forEach(s=>{
             let ss = Object.create(s);
             ss = {...s, offset : s.address.sub(m.base)};
-            console.log(JSON.stringify(ss))
+            (globalThis as any). console .log(JSON.stringify(ss))
         })
 }
 
@@ -722,7 +723,7 @@ type SYMBOLINFO= {
 type SYMBOLSINFO= {[key:string]:SYMBOLINFO};
 export const getSoSymbols = (m:Module):SYMBOLSINFO=>{
     let symbols:SYMBOLSINFO ={};
-    console.log(JSON.stringify(m));
+    (globalThis as any). console .log(JSON.stringify(m));
     m.enumerateExports()
         .forEach(e=>{
             let ee = Object.create(e);
@@ -765,18 +766,18 @@ export const runFunWithExceptHandling = (f: () => void, modInfos: MODINFOS_TYPE 
     const handleExceptionContext = (e: Error): void => {
         if ((e as any).context !== undefined) {
             const context = (e as any).context;
-            console.log(`context: ${JSON.stringify(context)}`)
-            console.log('called from:\n' +
+            (globalThis as any). console .log(`context: ${JSON.stringify(context)}`)
+            (globalThis as any). console .log('called from:\n' +
                 Thread.backtrace(context, Backtracer.ACCURATE)
                     .map(DebugSymbol.fromAddress).join('\n') + '\n');
             const pc = context.pc;
-            console.log('pc', pc, inspectPointer(pc));
+            (globalThis as any). console .log('pc', pc, inspectPointer(pc));
             const sp = context.sp;
-            console.log('sp', sp);
+            (globalThis as any). console .log('sp', sp);
             dumpMemory(sp, Process.pointerSize * spCount);
             for (let t = 0; t < spCount; t++) {
                 const p = sp.add(t * Process.pointerSize).readPointer();
-                console.log(t, inspectPointer(p));
+                (globalThis as any). console .log(t, inspectPointer(p));
             }
         }
     }
@@ -820,7 +821,7 @@ export const getStringSet=(param:string|string[]):Set<string> =>{
 }
 
 export const exit = ():void=>{
-    console.log('##########EXIT##########')
+    (globalThis as any). console .log('##########EXIT##########')
 }
 export const logWithFileNameAndLineNo = (msg:string)=>{
     let getErrorObject = function(){
@@ -831,17 +832,17 @@ export const logWithFileNameAndLineNo = (msg:string)=>{
     // remove `at `
     let index = caller_line?.indexOf('at ');
     let final_caller_line = (index>=0) ?caller_line.slice(index+3) : caller_line;
-    console.log(final_caller_line, ":", msg)
+    (globalThis as any). console .log(final_caller_line, ":", msg)
 }
 
 export const getPyCodeFromMemory=(p:NativePointer, sz:number):string=>{
     let pycode = "";
-    pycode += `(${p}, [`
+    pycode += `(${p}, [`;
     let bs = p.readByteArray(sz)
     if(bs==null) throw `can not read at ${sz}`
-    pycode += new Uint8Array(bs).join(',')
-    pycode += ']), '
-    console.log(pycode)
+    pycode += new Uint8Array(bs).join(',');
+    pycode += `]), `;
+    (globalThis as any). console .log(pycode)
     return pycode;
 }
 
@@ -860,7 +861,7 @@ export const readString = (p:NativePointer):string =>{
         return s;
     }
     catch(e){
-        console.log(`read string from ${p} failed, and dump memory `)
+        (globalThis as any). console .log(`read string from ${p} failed, and dump memory `)
         dumpMemory(p, 0x20);
         return "";
     }
@@ -869,7 +870,7 @@ export const readString = (p:NativePointer):string =>{
 export const findFuns = (s:string, ignore_case?:boolean, libs?:string[]) =>{
     libs = libs || [];
     ignore_case = ignore_case || false;
-    console.log('+ findFuns with ',s)
+    (globalThis as any). console .log('+ findFuns with ',s)
     const handleModule=(m:Module)=>{
         m.enumerateExports()
             .filter( e=>{
@@ -877,7 +878,7 @@ export const findFuns = (s:string, ignore_case?:boolean, libs?:string[]) =>{
                 return e.name.includes(s)
             })
             .forEach(e=>{
-                console.log('export',JSON.stringify([m,e]),e.address.sub(m.base))
+                (globalThis as any). console .log('export',JSON.stringify([m,e]),e.address.sub(m.base))
             })
         m.enumerateSymbols()
             .filter(e=> {
@@ -885,24 +886,24 @@ export const findFuns = (s:string, ignore_case?:boolean, libs?:string[]) =>{
                 return e.name.includes(s)
             })
             .forEach(e=>{
-                console.log('symbol', JSON.stringify([m,e]),e.address.sub(m.base))
+                (globalThis as any). console .log('symbol', JSON.stringify([m,e]),e.address.sub(m.base))
             })
         let e = m.findExportByName(s);
         if(e!=null){
-            console.log('find export', JSON.stringify([m,e]),e.sub(m.base))
+            (globalThis as any). console .log('find export', JSON.stringify([m,e]),e.sub(m.base))
         }
     }
     if(libs.length>0){
         libs.forEach(lib=>{
             let m = Process.getModuleByName(lib);
-            console.log('check', lib, 'and', m)
+            (globalThis as any). console .log('check', lib, 'and', m)
             if(m!=null) handleModule(m);
         })
     }
     else {
         Process.enumerateModules() .forEach(handleModule)
     }
-    console.log('- findFuns with ',s);
+    (globalThis as any). console .log('- findFuns with ',s);
 }
 
 export const monitorMemory=(base:NativePointer, sz:number)=>{
@@ -914,7 +915,7 @@ export const monitorMemory=(base:NativePointer, sz:number)=>{
     ];
     MemoryAccessMonitor.enable(ranges,{
         onAccess:function(details){
-            console.log(JSON.stringify(details))
+            (globalThis as any). console .log(JSON.stringify(details))
         },
     })
 }
@@ -993,10 +994,10 @@ export const isFunctionExist = (obj: any, funcName: string)=> {
   5000
 ).then(() => {
   // This code will run when the condition is met
-  console.log("Condition is met!");
+  (globalThis as any). console .log("Condition is met!");
 }).catch(() => {
   // This code will run when the maximum time is reached
-  console.log("Maximum time reached without meeting condition.");
+  (globalThis as any). console .log("Maximum time reached without meeting condition.");
 });
 
  */
@@ -1038,7 +1039,7 @@ export const changeDir=(d:string)=> {
     if(ret.isNull())  throw new Error(`getcwd failed ${ret}`)
     let newpwd = buf.readUtf8String();
 
-    console.log(`change dir ${oldpwd} => ${newpwd} `);
+    (globalThis as any). console .log(`change dir ${oldpwd} => ${newpwd} `);
 
 }
 
@@ -1153,7 +1154,7 @@ export const addressToGhidraOffset = (pointer: NativePointer, moduleName?: strin
         const info = moduleInfos[moduleName];
         if(info.ghidraBase){ ghidraBase = info.ghidraBase; }
     } else {
-        console.warn(`Using default Ghidra offset ${ghidraBase} for ${moduleName}`);
+        (globalThis as any). console .warn(`Using default Ghidra offset ${ghidraBase} for ${moduleName}`);
     }
 
     let module: Module | null = moduleName ? Process.findModuleByName(moduleName) : Process.findModuleByAddress(pointer);
@@ -1167,7 +1168,7 @@ export const addressToGhidraOffset = (pointer: NativePointer, moduleName?: strin
 
 export const dumpBackStraceWithModinfos = ( modinfos:MODINFOS_TYPE, thiz:InvocationContext, tstr?:string) =>{
     var callbacktrace = Thread.backtrace(thiz.context,Backtracer.ACCURATE);
-    console.log(tstr!=undefined?tstr:"", ' callbacktrace ' + callbacktrace);
+    (globalThis as any). console .log(tstr!=undefined?tstr:"", ' callbacktrace ' + callbacktrace);
     callbacktrace.forEach(c=>{
         let sym =DebugSymbol.fromAddress(c);
         let modname : string| null = null;
@@ -1182,7 +1183,7 @@ export const dumpBackStraceWithModinfos = ( modinfos:MODINFOS_TYPE, thiz:Invocat
                 offset = addressToGhidraOffset(c,m.name,  modinfos);
             }
         }
-        console.log(tstr!=undefined?tstr:"", c, modname, sym, modoffset, offset );
+        (globalThis as any). console .log(tstr!=undefined?tstr:"", c, modname, sym, modoffset, offset );
     })
 }
 
@@ -1228,7 +1229,7 @@ export const inspectStack = (context:CpuContext, modinfos?:MODINFOS_TYPE, n?:num
                 }
             }
         }
-        if(show) console.log(t, info, JSON.stringify(info));
+        if(show) (globalThis as any). console .log(t, info, JSON.stringify(info));
         ret.push(info);
     }
     return ret;
@@ -1324,7 +1325,7 @@ export let findMaxOccurrenceNumber = (numbers: number[]): number | undefined => 
   let maxOccurrence = 0;
   let pointerWithMaxOccurrence: number | undefined;
 
-  console.log('countMap', JSON.stringify(countMap))
+  (globalThis as any). console .log('countMap', JSON.stringify(countMap))
 
   // Find the pointer with maximum occurrence
   for(let  key in countMap){
@@ -1361,3 +1362,14 @@ export type PATHLIB_INFO_TYPE  = {
     inits      ?: NativePointer[];
 
 };
+
+export function basename(filename: string): string {
+  // Find the last occurrence of the '/' character
+  const lastSlashIndex = filename.lastIndexOf('/');
+
+  // Return the part of the string after the last '/'
+  // If there was no '/', the whole filename is returned
+  return filename.substring(lastSlashIndex + 1);
+}
+
+}

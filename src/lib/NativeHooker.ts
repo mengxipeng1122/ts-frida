@@ -1,10 +1,9 @@
 
 
 
-//////////////////////////////////////////////////
+namespace  MyFrida {
 
-import { basename } from "path";
-import { dumpMemory, showBacktrace } from "./utils";
+//////////////////////////////////////////////////
 
 // this object records all runtime info related hook
 /**
@@ -298,12 +297,12 @@ export class HookFunAction extends HookAction {
             for (let t = 0; t < nparas; t++) {
                 targs.push(args[t].toString());
             }
-            console.log(tstr, 'enter', JSON.stringify(name), ' (', targs.join(','), ')');
+            ( globalThis as any ). console .log(tstr, 'enter', JSON.stringify(name), ' (', targs.join(','), ')');
         };
 
         // Function to be called when the function is left
         let showLeave = function(retval: NativePointer, tstr: string, thiz: InvocationContext) {
-            console.log(HookFunAction.getLevelStr(), 'leave', JSON.stringify(name), retval);
+            ( globalThis as any ). console .log(HookFunAction.getLevelStr(), 'leave', JSON.stringify(name), retval);
         }
 
         // Attach an interceptor to the function
@@ -385,7 +384,7 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
     // Check if the library is already loaded
     let m  = Process.findModuleByName(soname);
     if(m!=null) {
-        console.log(soname, 'loaded')
+        ( globalThis as any ). console .log(soname, 'loaded')
         // If the library is already loaded, call the afterFun immediately
         afterFun();
         return;
@@ -442,3 +441,4 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
 
 
 
+}
