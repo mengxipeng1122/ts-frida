@@ -5,16 +5,16 @@
 
 import os
 import sys
+import math
 
 try:
     from packaging import version
     import pkg_resources  # part of setuptools
-    import math
     import lief
     import argparse
     from jinja2 import Template
 except ImportError:
-    print("you need to install math, packaging, lief, argparse and jinja2 library")
+    print("you need to install packaging, lief, argparse and jinja2 library")
     sys.exit(1)
 
 def getAlignNum(addr, align=0x10, shrink=False):
