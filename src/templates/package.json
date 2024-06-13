@@ -11,6 +11,7 @@
         "frida-compile": "^10.0.0"
     },
     "dependencies": {
+        "frida-compile": "^16.4.1"
 
     }
 }
