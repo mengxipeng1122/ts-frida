@@ -1,6 +1,6 @@
 {
   "name": "ts-frida",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "This repository is frida library in typescript",
   "type": "module",
   "main": "dist/index.js",
@@ -12,7 +12,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/vfsfitvnm/frida-il2cpp-bridge.git"
+    "url": "https://github.com/mengxipeng1122/ts-frida"
   },
   "keywords": [],
   "author": "",
