@@ -1511,8 +1511,8 @@ export const iterateSet = (set: any, cb?:(e:any)=>boolean)=>{
     }
 }
 
-const JavaList =Java.use('java.util.List')
-export const iterateList = (list: typeof JavaList, cb?:(e:any, idx:number)=>boolean)=>{
+export const iterateList = (list: any, cb?:(e:any, idx:number)=>boolean)=>{
+    const JavaList =Java.use('java.util.List')
     cb = cb ?? function(e:any, idx:number){
         (globalThis as any). console.log(idx, 'element', e);
         return true;
