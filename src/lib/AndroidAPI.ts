@@ -1532,4 +1532,93 @@ export const getAndroidVersioninfo = ()=>{
     }
 }
 
+export const runFunsOnMainThread= (cb:()=>void, clzname:string = 'com.myapp.Runnable') =>{
+    const Looper = Java.use("android.os.Looper");
+    const Handler = Java.use("android.os.Handler");
+    const Runnable = Java.use("java.lang.Runnable");
+    // Create a new handler that's attached to the main thread
+    let handler = Handler.$new(Looper.getMainLooper());
+
+    // Dynamically implement a Runnable
+    let setTextRunnable = Java.registerClass({
+        // Give your class a name; it's necessary if you want to retain() it
+        name: clzname,
+        // Implement the Runnable interface
+        implements: [Runnable],
+        methods: {
+            run: function () {
+                // Make sure to convert the text to Java's String type
+                // The setText method is overloaded. Make sure to use the correct
+                // overload that matches the argument being passed.
+                cb();
+            }
+        }
+    });
+
+    // Use the handler to post a runnable that performs the UI operation
+    handler.post(setTextRunnable.$new());
+
+};
+
+export const tryJavaCast = (o:any, clz:any) : any | null =>{
+
+    try{
+        const casted = Java.cast(o, clz);
+        return casted;
+
+    }catch(e){
+        return null;
+    }
+
+}
+
+export const autoInputEditTexts = (inputs:{[key:string]:string} = {})=> {
+    const ViewGroup = Java.use("android.view.ViewGroup");
+    const TextInputEditText = Java.use('com.google.android.material.textfield.TextInputEditText')
+    const BufferType = Java.use("android.widget.TextView$BufferType");
+
+    function checkAllTextInputEditTexts(view: any) {
+
+        const textInputEditText = tryJavaCast(view, TextInputEditText);
+        if(textInputEditText!=null){
+            const clzName   = view.getClass().getName();
+            console.log(`${JSON.stringify(view)}, ${clzName}`) 
+            const hint = textInputEditText.getHint();
+            if(hint in inputs){
+                const text = inputs[hint];
+                console.log(`autoinput ${text} to ${hint}`)
+                runFunsOnMainThread(()=>{
+
+                    textInputEditText.setText(
+                        Java.use("java.lang.String").$new(text),
+                        BufferType.EDITABLE.value,
+                    );
+                    Thread.sleep(.2)
+                })
+            }
+            else{
+                console.warn(`can not find input for ${hint}`)
+            }
+        } else {
+            const viewGroup = tryJavaCast(view, ViewGroup);
+            if (viewGroup != null) {
+                const childCount = viewGroup.getChildCount();
+                for (let i = 0; i < childCount; i++) {
+                    const childView = viewGroup.getChildAt(i);
+                    checkAllTextInputEditTexts(childView);
+                }
+            }
+        }
+    }
+
+    Java.choose("android.app.Activity", {
+        onMatch: function(instance) {
+            const rootViewGroup = instance.getWindow().getDecorView();
+            console.log(`rootViewGroup: ${JSON.stringify(rootViewGroup)}`)
+            checkAllTextInputEditTexts(rootViewGroup);
+        },
+        onComplete: function() {}
+    });
+};
+
 }
