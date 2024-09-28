@@ -1372,4 +1372,69 @@ export function basename(filename: string): string {
   return filename.substring(lastSlashIndex + 1);
 }
 
+export function writeFileData(fpath: string, p:NativePointer, sz:number, ) {
+
+    const platform = Process.platform;
+    if (platform === 'linux' || platform === 'windows') {
+        const fopen = new NativeFunction(Module.getExportByName(null, 'fopen'), 'pointer', ['pointer', 'pointer']);
+        const fclose = new NativeFunction(Module.getExportByName(null, 'fclose'), 'int', ['pointer']);
+        const fwrite = new NativeFunction(Module.getExportByName(null, 'fwrite'), 'size_t', ['pointer', 'size_t', 'size_t', 'pointer']);
+
+        const fp = fopen(Memory.allocUtf8String(fpath), Memory.allocUtf8String('wb'));
+        if (fp.isNull()) {
+            throw new Error(`open ${fpath} failed`);
+        }
+
+        const wrote = fwrite(p, 1, sz, fp);
+        fclose(fp);
+
+        if(wrote.toNumber()!=sz){
+            throw new Error(`write file ${fpath} failed, wrote ${wrote}/${sz}`);
+        }
+
+
+        return 
+    } else {
+        throw new Error(`unhandled platform ${platform}`);
+    }
+}
+
+export function writeFileText(fpath: string, text:string) {
+
+    const platform = Process.platform;
+    if (platform === 'linux' || platform === 'windows') {
+        const fopen = new NativeFunction(Module.getExportByName(null, 'fopen'), 'pointer', ['pointer', 'pointer']);
+        const fclose = new NativeFunction(Module.getExportByName(null, 'fclose'), 'int', ['pointer']);
+        const fwrite = new NativeFunction(Module.getExportByName(null, 'fwrite'), 'size_t', ['pointer', 'size_t', 'size_t', 'pointer']);
+
+        const fp = fopen(Memory.allocUtf8String(fpath), Memory.allocUtf8String('w'));
+        if (fp.isNull()) {
+            throw new Error(`open ${fpath} failed`);
+        }
+
+        const p = Memory.allocUtf8String(text);
+
+        if(p==null) throw new Error(`alloc memory for text failed`)
+        if (p.isNull()) throw new Error(`alloc memory for text failed`)
+
+        const sz = text.length;
+
+        const wrote = fwrite(p, 1, sz,  fp);
+        fclose(fp);
+
+        if(wrote.toNumber()!=sz){
+            throw new Error(`write file ${fpath} failed, wrote ${wrote}/${sz}`);
+        }
+
+
+        console.log(`p`,p)
+
+
+        return 
+    } else {
+        throw new Error(`unhandled platform ${platform}`);
+    }
+}
+
+
 }
