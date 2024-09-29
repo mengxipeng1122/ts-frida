@@ -1,6 +1,6 @@
 {
   "name": "ts-frida",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "This repository is frida library in typescript",
   "type": "module",
   "main": "dist/index.js",
