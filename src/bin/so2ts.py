@@ -38,8 +38,7 @@ def handle_ELF(info, binary, no_content=False):
         dict: Updated 'info' dictionary.
     """
     load_size = 0;
-    load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.SEGMENT_TYPES.LOAD]
-
+    load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.SEGMENT_TYPES.LOAD ]
     for seg in load_segments:
         virtual_address = seg.virtual_address;
         virtual_size    = seg.virtual_size;
@@ -72,8 +71,7 @@ def handle_ELF(info, binary, no_content=False):
         if sym.type==lief.ELF.SYMBOL_TYPES.NOTYPE: continue
         info['symbols'][k] = {'offset':hex(sym.value)}
     # relocations
-    info['patches_offset'] = []
-    info['patches_symbol'] = []
+    info['patches'] = []
     for k, rel in enumerate(binary.relocations):
         typ         = rel.type;
         address     = rel.address
@@ -85,10 +83,7 @@ def handle_ELF(info, binary, no_content=False):
             int(lief.ELF.RELOCATION_X86_64.R64       ) ,
         ]:
             addend = rel.addend
-            info['patches_offset'].append({
-                'address': hex(address),
-                'offset': hex(addend),
-            })
+            code = f'base.add({hex(address)}).writePointer(base.add({hex(addend)}));'
 
         elif typ in [
             int(lief.ELF.RELOCATION_ARM.GLOB_DAT        ) ,
@@ -113,17 +108,12 @@ def handle_ELF(info, binary, no_content=False):
             if found_sym: 
                 offset  = info['symbols'][sym_name]['offset']
                 address = address if isinstance(address, str) else hex(address)
-                info['patches_symbol'].append({
-                    'address': address,
-                    'offset': offset,
-                })
+                code    = f'base.add({address}).writePointer(base.add({offset}));'
             else:
-                info['patches_symbol'].append({
-                    'address': hex(address),
-                    'symbol': sym_name,
-                })
+                code    = f"base.add({hex(address)}).writePointer(MyFrida.resolveSymbol('{sym_name}', libs, syms));"
         else:
             raise Exception(f'unhandled relocation type {typ}')
+        info['patches'].append(code)
 
     # init codes
     info['inits'] = [hex(f.address) for f in binary.ctor_functions]
@@ -178,8 +168,7 @@ def handle_PE(info, binary, no_content=False):
 
     ########################################
     #patches
-    info['patches_image_base'] = []
-    info['patches_symbol'] = []
+    patches=[]
     # base relocation
     for t, reloc in enumerate(binary.relocations):
         virtual_address = reloc.virtual_address;
@@ -189,10 +178,8 @@ def handle_PE(info, binary, no_content=False):
             if typ == lief.PE.RELOCATIONS_BASE_TYPES.ABSOLUTE: pass
             elif typ == lief.PE.RELOCATIONS_BASE_TYPES.DIR64: pass
             elif typ == lief.PE.RELOCATIONS_BASE_TYPES.HIGHLOW:
-                info['patches_image_base'].append({
-                    'address': hex(address),
-                    'offset': hex(image_base)
-                })
+                code = f'base.add({hex(address)}).writePointer(base.add({hex(address)}).readPointer().add(base.sub({hex(image_base)})));'
+                patches.append(code)
             else:
                 raise Exception(f'unhandled PE relocation type {typ}' )
 
@@ -201,10 +188,9 @@ def handle_PE(info, binary, no_content=False):
         for tt,  entry in enumerate(imp.entries):
             address     = entry.iat_address;
             sym_name    = entry.name;
-            info['patches_symbol'].append({
-                'address': hex(address),
-                'symbol': sym_name,
-            })
+            code        = f"base.add({hex(address)}).writePointer(MyFrida.resolveSymbol('{sym_name}', libs, syms));"
+            patches.append(code)
+    info['patches'] = patches
 
     return info;
 
