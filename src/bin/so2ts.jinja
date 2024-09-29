@@ -221,17 +221,15 @@ export const mod  = {
             ////////////////////////////////////////////////////////////////////////////////
             // Handle relocations
             {% if 'patches_image_base' in info %}
-                {% for t in  info['patches_image_base'] %}
-                    base.add({{t['address']}}).writePointer(base.add({{t['offset']}}).readPointer().add(base.sub({{t['image_base']}})));
+                {% for t in  info['patches_image_base'] %} base.add({{t['address']}}).writePointer(base.add({{t['offset']}}).readPointer().add(base.sub({{t['image_base']}})));
                 {% endfor %}
             {% endif %}
             {% if 'patches_offset' in info %}
-                {% for t in  info['patches_offset'] %}
-                base.add(0x3df8).writePointer(base.add(0x1110));  
+                {% for t in  info['patches_offset'] %} base.add({{t['address']}}).writePointer(base.add({{t['offset']}}));  
                 {% endfor %}
             {% endif %}
             {% if 'patches_symbol' in info %}
-                {% for t in  info['patches_symbol'] %}{{t}}  
+                {% for t in  info['patches_symbol'] %} base.add({{t['address']}}).writePointer(resolveSymbol('{{t['symbol']}}'));
                 {% endfor %}
             {% endif %}
 
