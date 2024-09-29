@@ -1,5 +1,5 @@
 
-import 'ts-frida'
+// import 'ts-frida' // don't use this, it's not working with new version of frida-compile
 
 let base = ptr(0); // avoid frida free allocated buffer 
 
@@ -16,13 +16,191 @@ const mod_deinit  = (base:NativePointer)=>{
 }
 
 
+type MODINFO_BASETYPE = {
+
+    unload? : ()=>void;
+
+    name    : string, 
+
+    base    : NativePointer,
+
+    cave?   : NativePointer,
+
+    symbols : {[key:string]:NativePointer},
+
+    hookids : {[key:string]:null | InvocationListener},
+
+    functions : {[key:string]:{
+
+        hook:Function,
+
+        unhook:Function,
+
+        call:Function,
+
+    }},
+
+    variables : {[key:string]:{
+
+    }},
+
+}
+
+type PATHLIB_INFO_TYPE = {
+
+
+    unload      : ()=>void,
+
+    
+    name        : string,
+
+    base        : NativePointer,
+
+    load_size  ?: number;
+
+
+    cave        : NativePointer,
+
+
+    symbols     : {[key:string]:NativePointer},
+
+    inits      ?: NativePointer[];
+
+};
+
+
+function readFileData(fpath: string, sz?: number, offset: number = 0): ArrayBuffer {
+    const platform = Process.platform;
+    if (platform === 'linux' || platform === 'windows') {
+        const fopen = new NativeFunction(Module.getExportByName(null, 'fopen'), 'pointer', ['pointer', 'pointer']);
+        const fseek = new NativeFunction(Module.getExportByName(null, 'fseek'), 'int', ['pointer', 'long', 'int']);
+        const ftell = new NativeFunction(Module.getExportByName(null, 'ftell'), 'int', ['pointer']);
+        const fclose = new NativeFunction(Module.getExportByName(null, 'fclose'), 'int', ['pointer']);
+        const fread = new NativeFunction(Module.getExportByName(null, 'fread'), 'size_t', ['pointer', 'size_t', 'size_t', 'pointer']);
+        const SEEK_SET = 0;
+        const SEEK_CUR = 1;
+        const SEEK_END = 2;
+
+        const fp = fopen(Memory.allocUtf8String(fpath), Memory.allocUtf8String('rb'));
+        if (fp.isNull()) {
+            throw new Error(`open ${fpath} failed`);
+        }
+
+        if(sz==undefined){
+            // Get the file size
+            fseek(fp, 0, SEEK_END);
+            sz = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
+        }
+
+        const buf = Memory.alloc(sz);
+        fseek(fp, offset, SEEK_SET);
+        const read = fread(buf, 1, sz, fp);
+        if (read.toNumber() !== sz) {
+            (globalThis as any). console .log(`error at read file ${fpath}, ${read}/${sz}`);
+        }
+        const ab = buf.readByteArray(sz);
+        if (ab === null) {
+            throw new Error(`read byte array failed when read file ${fpath}`);
+        }
+        fclose(fp);
+        return ab;
+    } else {
+        throw new Error(`unhandled platform ${platform}`);
+    }
+}
+
+
+ const resolveSymbol = (
+        symbolName: string,
+        libraries?: (MODINFO_BASETYPE | string)[],
+        resolvedSymbols: { [key: string]: NativePointer } = {},
+        options: { useFindSymbols?: boolean } = {},
+        ): NativePointer => {
+    const useFindSymbols = options.useFindSymbols || false;
+
+    let resolvedSymbol: NativePointer | undefined = resolvedSymbols[symbolName];
+
+    if (resolvedSymbol) {
+        return resolvedSymbol;
+    }
+
+    const findSymbolInModule = (moduleName: string): NativePointer | undefined => {
+        const exportByName = Module.findExportByName(moduleName, symbolName) || undefined;
+        return exportByName;
+    };
+
+    if (libraries) {
+        for (const library of libraries) {
+            if (typeof library === 'string') {
+                resolvedSymbol = findSymbolInModule(library);
+
+                if (resolvedSymbol) {
+                    return resolvedSymbol;
+                }
+
+                const module = Process.findModuleByName(library);
+                if (module) {
+                    resolvedSymbol = module.enumerateExports().find((exportedSymbol) => exportedSymbol.name === symbolName)?.address;
+
+                    if (resolvedSymbol) {
+                        return resolvedSymbol;
+                    }
+
+                    if (useFindSymbols) {
+                        resolvedSymbol = module.enumerateSymbols().find((symbol) => symbol.name === symbolName)?.address;
+                        if (resolvedSymbol) {
+                            return resolvedSymbol;
+                        }
+                    }
+                }
+            } else {
+                resolvedSymbol = findSymbolInModule(library.name);
+                if (resolvedSymbol) {
+                    return resolvedSymbol;
+                }
+
+                resolvedSymbol = library.symbols[symbolName];
+                if (resolvedSymbol) {
+                    return resolvedSymbol;
+                }
+            }
+        }
+    }
+
+    resolvedSymbol = Module.findExportByName(null, symbolName) ?? undefined;
+    if (resolvedSymbol) {
+        return resolvedSymbol;
+    }
+
+    const modules = Process.enumerateModules();
+    if (modules) {
+        for (const module of modules) {
+            resolvedSymbol = module.findExportByName(symbolName) ?? undefined;
+            if (resolvedSymbol) {
+                return resolvedSymbol;
+            }
+
+            resolvedSymbol = module.enumerateSymbols().find((symbol) => symbol.name === symbolName)?.address;
+            if (resolvedSymbol) {
+                return resolvedSymbol;
+            }
+        }
+    }
+
+    throw new Error(`Unable to resolve symbol ${symbolName}`);
+};
+
+
+
 export const mod  = {
 
 {% if info['mode'] == 'load' %}
     {% if info['no_content'] %}
-        load: (sopath:string, libs: (MyFrida.MODINFO_BASETYPE|string)[] =[], syms:{[key:string]:NativePointer} ={}, init:boolean=true):MyFrida.PATHLIB_INFO_TYPE=>{
+        load: (sopath:string, libs: (MODINFO_BASETYPE|string)[] =[], syms:{[key:string]:NativePointer} ={}, init:boolean=true):PATHLIB_INFO_TYPE=>{
+
     {% else %}
-        load: (libs: (MyFrida.MODINFO_BASETYPE|string)[] = [], syms:{[key:string]:NativePointer}={}, init:boolean=true):MyFrida.PATHLIB_INFO_TYPE=>{
+        load: (libs: (MODINFO_BASETYPE|string)[] = [], syms:{[key:string]:NativePointer}={}, init:boolean=true):PATHLIB_INFO_TYPE=>{
     {% endif %}
 
 
@@ -33,7 +211,7 @@ export const mod  = {
             ////////////////////////////////////////////////////////////////////////////////
             // load content
         {% if info['no_content'] %}
-            {% for t in  info['loads'] %}base.add({{t['virtual_address']}}).writeByteArray(MyFrida.readFileData(sopath, {{t['size']}}, {{t['file_offset']}}));
+            {% for t in  info['loads'] %}base.add({{t['virtual_address']}}).writeByteArray(readFileData(sopath, {{t['size']}}, {{t['file_offset']}}));
             {% endfor %}
         {% else %}
             {% for t in  info['loads'] %}base.add({{t['virtual_address']}}).writeByteArray([{{t['content_ts']}}]);
@@ -41,9 +219,21 @@ export const mod  = {
     {% endif %}
 
             ////////////////////////////////////////////////////////////////////////////////
-            // handle relocation
-            {% for t in  info['patches'] %}{{t}}  
-            {% endfor %}
+            // Handle relocations
+            {% if 'patches_image_base' in info %}
+                {% for t in  info['patches_image_base'] %}
+                    base.add({{t['address']}}).writePointer(base.add({{t['offset']}}).readPointer().add(base.sub({{t['image_base']}})));
+                {% endfor %}
+            {% endif %}
+            {% if 'patches_offset' in info %}
+                {% for t in  info['patches_offset'] %}
+                base.add(0x3df8).writePointer(base.add(0x1110));  
+                {% endfor %}
+            {% endif %}
+            {% if 'patches_symbol' in info %}
+                {% for t in  info['patches_symbol'] %}{{t}}  
+                {% endfor %}
+            {% endif %}
 
             ////////////////////////////////////////////////////////////////////////////////
             if(init) mod_init(base);
@@ -56,18 +246,18 @@ export const mod  = {
 
 {% elif info['mode'] == 'get' %}
     {% if 'name' in info and info['name'] | length >0 %}
-        get: (soname?:string, libs?: (MyFrida.MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):MyFrida.PATHLIB_INFO_TYPE=>{
+        get: (soname?:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):PATHLIB_INFO_TYPE=>{
             let name = '{{ info["name"]}}'; 
             if(soname!=undefined) name = soname;
     {% else %}
-        get: (soname:string, libs?: (MyFrida.MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):MyFrida.PATHLIB_INFO_TYPE=>{
+        get: (soname:string, libs?: (MODINFO_BASETYPE|string)[], syms?:{[key:string]:NativePointer}):PATHLIB_INFO_TYPE=>{
             let name = soname;
     {% endif %}
             base = Process.getModuleByName(name).base;
     {% endif %}
         
 
-            const ___info:MyFrida.PATHLIB_INFO_TYPE = {
+            const ___info:PATHLIB_INFO_TYPE = {
         {% if info['mode'] == 'load' %}
                 unload      : ()=>{
                     //unhook 
@@ -90,7 +280,7 @@ export const mod  = {
             {% endif %}
 
                 symbols     : {
-                    {% for k, v in  info['symbols'].items() %}{% if 'offset' in v %}{{k}}: base.add({{v['offset']}}),{% else %}{{k}}: Module.findExportByName(name, '{{k}}') ?? MyFrida.resolveSymbol('{{k}}', libs, syms),{% endif %}
+                    {% for k, v in  info['symbols'].items() %}{% if 'offset' in v %}{{k}}: base.add({{v['offset']}}),{% else %}{{k}}: Module.findExportByName(name, '{{k}}') ?? resolveSymbol('{{k}}', libs, syms),{% endif %}
                     {% endfor %}
                 },
 
