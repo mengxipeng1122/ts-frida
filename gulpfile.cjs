@@ -7,7 +7,7 @@ const rename = require('gulp-rename');
 const { exec } = require('child_process');
 
 gulp.task('tspc', function(done) {
-    exec('./node_modules/.bin/tspc', function(err, stdout, stderr) {
+    exec('./node_modules/.bin/tspc src/**/*.ts', function(err, stdout, stderr) {
         console.log(stdout);
         console.log(stderr);
         if (err) {
@@ -29,7 +29,7 @@ gulp.task('rename', function(){
 // Compile TypeScript files
 gulp.task('compile', () => {
     const tsProject = ts.createProject('tsconfig.json');
-    return gulp.src('src/**/*.ts')
+    return gulp.src(['src/**/*.ts', '!src/nativeLib/**'])
         .pipe(tsProject())
         .pipe(gulp.dest('dist'));
 });
@@ -56,7 +56,7 @@ gulp.task('copyFiles', function(){
 
 // Define array of objects for the directories to copy
 const directoriesToMove = [
-  { source: './src/templates/**/*', destination: './dist/templates/' },
+  { source: './templates/**/*', destination: './dist/templates/' },
   { source: './src/nativeLib/**/*', destination: './dist/nativeLib/' },
   // Add more directories as needed
 ];

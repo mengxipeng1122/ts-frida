@@ -15,6 +15,7 @@ try:
     from jinja2 import Template
 except ImportError:
     print("you need to install packaging, lief, argparse and jinja2 library")
+    print("please use lief 0.14.0")
     sys.exit(1)
 
 def getAlignNum(addr, align=0x10, shrink=False):
@@ -37,7 +38,8 @@ def handle_ELF(info, binary, no_content=False):
         dict: Updated 'info' dictionary.
     """
     load_size = 0;
-    load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.SEGMENT_TYPES.LOAD ]
+    load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.SEGMENT_TYPES.LOAD]
+
     for seg in load_segments:
         virtual_address = seg.virtual_address;
         virtual_size    = seg.virtual_size;
