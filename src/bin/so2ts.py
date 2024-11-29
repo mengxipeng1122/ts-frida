@@ -18,6 +18,9 @@ except ImportError:
     print("please use lief 0.14.0")
     sys.exit(1)
 
+installed_lief_version = pkg_resources.get_distribution("lief").version
+print('installed lief version ', installed_lief_version)
+
 def getAlignNum(addr, align=0x10, shrink=False):
     if shrink:
         addr1 = int( math.floor(addr/align) *align)
@@ -38,7 +41,11 @@ def handle_ELF(info, binary, no_content=False):
         dict: Updated 'info' dictionary.
     """
     load_size = 0;
-    load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.SEGMENT_TYPES.LOAD ]
+    # check if install lief is early than 0.15.0
+    if version.parse(installed_lief_version) < version.parse("0.15.0"):
+        load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.SEGMENT_TYPES.LOAD ]
+    else:
+        load_segments = [seg for seg in binary.segments if seg.type == lief.ELF.Segment.TYPE.LOAD ]
     for seg in load_segments:
         virtual_address = seg.virtual_address;
         virtual_size    = seg.virtual_size;
@@ -68,7 +75,10 @@ def handle_ELF(info, binary, no_content=False):
     for sym in binary.exported_symbols:
         k = sym.name
         if sym.value==0: continue
-        if sym.type==lief.ELF.SYMBOL_TYPES.NOTYPE: continue
+        if version.parse(installed_lief_version) < version.parse("0.15.0"):
+            if sym.type==lief.ELF.SYMBOL_TYPES.NOTYPE: continue
+        else:
+            if sym.type==lief.ELF.Symbol.TYPE.NOTYPE: continue
         info['symbols'][k] = {'offset':hex(sym.value)}
     # relocations
     info['patches'] = []
@@ -76,16 +86,43 @@ def handle_ELF(info, binary, no_content=False):
         typ         = rel.type;
         address     = rel.address
         sym_name    = rel.symbol.name
-        if typ in [
-            int(lief.ELF.RELOCATION_ARM.RELATIVE     ) ,
-            int(lief.ELF.RELOCATION_AARCH64.RELATIVE ) ,
-            int(lief.ELF.RELOCATION_X86_64.R64       ) ,
-        ]:
-            addend = rel.addend
-            code = f'base.add({hex(address)}).writePointer(base.add({hex(addend)}));'
-        elif typ in [
-            int(lief.ELF.RELOCATION_i386.RELATIVE    ) ,
-        ]:
+        if version.parse(installed_lief_version) < version.parse("0.15.0"):
+            relative_types = [
+                int(lief.ELF.RELOCATION_i386.RELATIVE    ) ,
+                int(lief.ELF.RELOCATION_ARM.RELATIVE     ) ,
+                int(lief.ELF.RELOCATION_AARCH64.RELATIVE ) ,
+                int(lief.ELF.RELOCATION_X86_64.R64       ) ,
+            ]
+            resolve_types = [
+                int(lief.ELF.RELOCATION_ARM.GLOB_DAT        ) ,
+                int(lief.ELF.RELOCATION_AARCH64.JUMP_SLOT   ) ,
+                int(lief.ELF.RELOCATION_AARCH64.ABS64       ) ,
+                int(lief.ELF.RELOCATION_AARCH64.GLOB_DAT    ) ,
+                int(lief.ELF.RELOCATION_ARM.JUMP_SLOT       ) ,
+                int(lief.ELF.RELOCATION_ARM.ABS32           ) ,
+                int(lief.ELF.RELOCATION_ARM.REL32           ) ,
+                int(lief.ELF.RELOCATION_i386.JUMP_SLOT      ) ,
+                int(lief.ELF.RELOCATION_i386.GLOB_DAT       ) ,
+            ]
+        else:
+            relative_types = [
+                int(lief.ELF.Relocation.TYPE.X86_RELATIVE),
+                int(lief.ELF.Relocation.TYPE.ARM_RELATIVE),
+                int(lief.ELF.Relocation.TYPE.AARCH64_RELATIVE),
+                int(lief.ELF.Relocation.TYPE.X86_64_RELATIVE64),
+            ]
+            resolve_types = [
+                int(lief.ELF.Relocation.TYPE.ARM_GLOB_DAT        ) ,
+                int(lief.ELF.Relocation.TYPE.AARCH64_JUMP_SLOT   ) ,
+                int(lief.ELF.Relocation.TYPE.AARCH64_ABS64       ) ,
+                int(lief.ELF.Relocation.TYPE.AARCH64_GLOB_DAT    ) ,
+                int(lief.ELF.Relocation.TYPE.ARM_JUMP_SLOT       ) ,
+                int(lief.ELF.Relocation.TYPE.ARM_ABS32           ) ,
+                int(lief.ELF.Relocation.TYPE.ARM_REL32           ) ,
+                int(lief.ELF.Relocation.TYPE.X86_64_JUMP_SLOT      ) ,
+                int(lief.ELF.Relocation.TYPE.X86_64_GLOB_DAT       ) ,
+            ]
+        if typ in relative_types:
             addend = rel.addend
             code = f'''
             {{
@@ -94,23 +131,18 @@ def handle_ELF(info, binary, no_content=False):
             }}
             '''
 
-        elif typ in [
-            int(lief.ELF.RELOCATION_ARM.GLOB_DAT        ) ,
-            int(lief.ELF.RELOCATION_AARCH64.JUMP_SLOT   ) ,
-            int(lief.ELF.RELOCATION_AARCH64.ABS64       ) ,
-            int(lief.ELF.RELOCATION_AARCH64.GLOB_DAT    ) ,
-            int(lief.ELF.RELOCATION_ARM.JUMP_SLOT       ) ,
-            int(lief.ELF.RELOCATION_ARM.ABS32           ) ,
-            int(lief.ELF.RELOCATION_ARM.REL32           ) ,
-            int(lief.ELF.RELOCATION_i386.JUMP_SLOT      ) ,
-            int(lief.ELF.RELOCATION_i386.GLOB_DAT       ) ,
-        ]:
+        elif typ in resolve_types:
             # try to found symbol
             found_sym = sym_name in info['symbols'];
             if not found_sym:
                 if binary.has_symbol(sym_name):
                     sym = binary.get_symbol(sym_name)
-                    if sym.type!=lief.ELF.SYMBOL_TYPES.NOTYPE \
+                    if version.parse(installed_lief_version) < version.parse("0.15.0"):
+                        no_type = lief.ELF.SYMBOL_TYPES.NOTYPE
+                    else: 
+                        no_type = lief.ELF.Symbol.TYPE.NOTYPE
+
+                    if sym.type!=no_type \
                        and sym.value!=0:
                        info['symbols'][sym_name] = {'offset':hex(sym.value)}
                        found_sym = True;
@@ -235,8 +267,6 @@ def main():
     binary = lief.parse(args.binary)
     info['binary'] = binary
 
-    installed_lief_version = pkg_resources.get_distribution("lief").version
-    print('installed lief version ', installed_lief_version)
 
     if version.parse(installed_lief_version) < version.parse("0.14.0"):
         # Handle different binary formats
