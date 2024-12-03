@@ -1,7 +1,7 @@
 /* internal */
 
 
-namespace MyFrida {
+// namespace MyFrida {
 /**
  * Dump memory contents starting from a given address.
  * 
@@ -25,7 +25,7 @@ export const dumpMemory = (p: NativePointer, l: number = 0x20): void => {
  * @returns {NativePointer} The default Ghidra offset.
  * @throws {Error} If the process architecture is not supported.
  */
-const getDefaultGhighOffset = (): NativePointer => {
+export const getDefaultGhighOffset = (): NativePointer => {
     // Mapping of process architecture to the Ghidra offset.
     const ghidraOffsetMap: { [key: string]: NativePointer } = {
         arm:    ptr(0x10000),
@@ -714,13 +714,14 @@ export const dumpSoSymbols=(soname:string):void=>{
         })
 }
 
-type SYMBOLINFO= {
+export type SYMBOLINFO= {
     address :NativePointer; 
     name    :string;
     type    :string;
     offset  :NativePointer;
 };
-type SYMBOLSINFO= {[key:string]:SYMBOLINFO};
+export type SYMBOLSINFO= {[key:string]:SYMBOLINFO};
+
 export const getSoSymbols = (m:Module):SYMBOLSINFO=>{
     let symbols:SYMBOLSINFO ={};
     (globalThis as any). console .log(JSON.stringify(m));
@@ -823,6 +824,7 @@ export const getStringSet=(param:string|string[]):Set<string> =>{
 export const exit = ():void=>{
     (globalThis as any). console .log('##########EXIT##########')
 }
+
 export const logWithFileNameAndLineNo = (msg:string)=>{
     let getErrorObject = function(){
         try{throw Error('');} catch(err) {return err;}
@@ -1126,7 +1128,7 @@ export type MODINFOS_TYPE = {
     }
 };
 
-const getDefaultGhidraBase = ():NativePointer =>{
+export const getDefaultGhidraBase = ():NativePointer =>{
     if(Process.arch=='arm'  ){ return ptr(0x10000);     }
     if(Process.arch=='arm64'){ return ptr(0x100000);    }
     if(Process.arch=='ia32' ){ return ptr(0x400000);    }
@@ -1341,7 +1343,7 @@ export let findMaxOccurrenceNumber = (numbers: number[]): number | undefined => 
   return pointerWithMaxOccurrence;
 }
 
-export type PATHLIB_INFO_TYPE  = {
+export type PATCHLIB_INFO_TYPE  = {
 
 
     unload      : ()=>void,
@@ -1363,7 +1365,8 @@ export type PATHLIB_INFO_TYPE  = {
 
 };
 
-export function basename(filename: string): string {
+export function basename(filename: string): string | null {
+    if(!filename) return null;
   // Find the last occurrence of the '/' character
   const lastSlashIndex = filename.lastIndexOf('/');
 
@@ -1436,5 +1439,26 @@ export function writeFileText(fpath: string, text:string) {
     }
 }
 
+// export const getInstructors =  (opts:{thumb?:boolean}) => {
+//     if(Process.arch=='arm'){
+//         const thumb = opts.thumb==undefined?false:opts.thumb;
+//         if(thumb){
+//             return  {ThumbRelocator,ThumbWriter}
+//         }
+//         else {
+//             return  {ArmRelocator,ArmWriter}
+//         }
+//     }
+//     else if(Process.arch=='arm64'){
+//         return {Arm64Relocator,Arm64Writer}
+//     }
+//     else if(Process.arch=='ia32' || Process.arch=='x64'){
+//         return {X86Relocator,X86Writer}
+//     }
+//     else {
+//         throw new Error(`unhandled arch ${Process.arch}`)
+//     }
+// }
 
-}
+
+// }

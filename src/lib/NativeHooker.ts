@@ -1,7 +1,8 @@
 
 
 
-namespace  MyFrida {
+import {dumpMemory, showBacktrace, basename} from './utils.js'
+// namespace  MyFrida {
 
 //////////////////////////////////////////////////
 
@@ -440,5 +441,4 @@ export let hookDlopen =(soname:string, afterFun:()=>void, beforeFun?:()=>void|nu
 
 
 
-
-}
+//  }

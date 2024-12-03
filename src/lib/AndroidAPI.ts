@@ -1,6 +1,8 @@
 
 
-namespace MyFrida {
+import {dumpMemory} from './utils.js'
+// namespace MyFrida {
+
 
 
 const checkAndroidPlatform = ()=>{
@@ -95,7 +97,7 @@ export const getExternalStorageDirectory  = ()=>{
     return Java.use('android.os.Environment').getExternalStorageDirectory().getAbsolutePath().toString();
 }
 
-export const androidAppInfo = ()=>{
+export const getAndroidAppInfo = ()=>{
     const ActivityThread = Java.use('android.app.ActivityThread');
     var currentApplication = ActivityThread.currentApplication();
     var context = currentApplication.getApplicationContext();
@@ -113,7 +115,7 @@ export const androidAppInfo = ()=>{
 //    (globalThis as any). console.log('   obbDir                        '      , context.getObbDir                          ()?.getAbsolutePath().toString(),    );
     
     return {
-        applicationName                      : context.getPackageName().toString(),
+        packageName                          : context.getPackageName                     ().toString(),
         packageCodePath                      : context.getPackageCodePath                 (),
         packageResourcePath                  : context.getPackageResourcePath             (),
         cacheDir                             : context.getCacheDir                        ()?.getAbsolutePath().toString(),
@@ -534,115 +536,113 @@ export const showAndroidToast = (t:string) =>{
 }
 
 export const bypasSSLPinning = ()=>{
-    Java.perform(function () {
-        (globalThis as any). console.log('')
-        (globalThis as any). console.log('===')
-        (globalThis as any). console.log('* Injecting hooks into common certificate pinning methods *')
-        (globalThis as any). console.log('===')
+    (globalThis as any). console.log('')
+    (globalThis as any). console.log('===')
+    (globalThis as any). console.log('* Injecting hooks into common certificate pinning methods *')
+    (globalThis as any). console.log('===')
     
-        var X509TrustManager = Java.use('javax.net.ssl.X509TrustManager');
-        var SSLContext = Java.use('javax.net.ssl.SSLContext');
+    var X509TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+    var SSLContext = Java.use('javax.net.ssl.SSLContext');
     
-        // build fake trust manager
-        var TrustManager = Java.registerClass({
-            name: 'com.sensepost.test.TrustManager',
-            implements: [X509TrustManager],
-            methods: {
-                checkClientTrusted: function (chain, authType) {
-                },
-                checkServerTrusted: function (chain, authType) {
-                },
-                getAcceptedIssuers: function () {
-                    return [];
-                }
+    // build fake trust manager
+    var TrustManager = Java.registerClass({
+        name: 'com.sensepost.test.TrustManager',
+        implements: [X509TrustManager],
+        methods: {
+            checkClientTrusted: function (chain, authType) {
+            },
+            checkServerTrusted: function (chain, authType) {
+            },
+            getAcceptedIssuers: function () {
+                return [];
             }
-        });
-    
-        // pass our own custom trust manager through when requested
-        var TrustManagers = [TrustManager.$new()];
-        var SSLContext_init = SSLContext.init.overload(
-            '[Ljavax.net.ssl.KeyManager;', '[Ljavax.net.ssl.TrustManager;', 'java.security.SecureRandom'
-        );
-        SSLContext_init.implementation = function (keyManager:any, trustManager:any, secureRandom:any) {
-            (globalThis as any). console.log('! Intercepted trustmanager request');
-            SSLContext_init.call(this, keyManager, TrustManagers, secureRandom);
-        };
-    
-        (globalThis as any). console.log('* Setup custom trust manager');
-    
-        // okhttp3
-        try {
-            var CertificatePinner = Java.use('okhttp3.CertificatePinner');
-            CertificatePinner.check.overload('java.lang.String', 'java.util.List').implementation = function (str:any) {
-                (globalThis as any). console.log('! Intercepted okhttp3: ' + str);
-                return;
-            };
-    
-            (globalThis as any). console.log('* Setup okhttp3 pinning')
-        } catch(err) {
-            (globalThis as any). console.log('* Unable to hook into okhttp3 pinner')
         }
-    
-        // trustkit
-        try {
-            var Activity = Java.use("com.datatheorem.android.trustkit.pinning.OkHostnameVerifier");
-            Activity.verify.overload('java.lang.String', 'javax.net.ssl.SSLSession').implementation = function (str:any) {
-                (globalThis as any). console.log('! Intercepted trustkit{1}: ' + str);
-                return true;
-            };
-    
-            Activity.verify.overload('java.lang.String', 'java.security.cert.X509Certificate').implementation = function (str:any) {
-                (globalThis as any). console.log('! Intercepted trustkit{2}: ' + str);
-                return true;
-            };
-    
-            (globalThis as any). console.log('* Setup trustkit pinning')
-        } catch(err) {
-            (globalThis as any). console.log('* Unable to hook into trustkit pinner')
-        }
-    
-        // TrustManagerImpl
-        try {
-            var TrustManagerImpl = Java.use('com.android.org.conscrypt.TrustManagerImpl');
-            TrustManagerImpl.verifyChain.implementation = function (untrustedChain:any, trustAnchorChain:any, host:any, clientAuth:any, ocspData:any, tlsSctData:any) {
-                (globalThis as any). console.log('! Intercepted TrustManagerImp: ' + host);
-                return untrustedChain;
-            };
-    
-            (globalThis as any). console.log('* Setup TrustManagerImpl pinning')
-        } catch (err) {
-            (globalThis as any). console.log('* Unable to hook into TrustManagerImpl')
-        }
-    
-        // Appcelerator
-        try {
-            var PinningTrustManager = Java.use('appcelerator.https.PinningTrustManager');
-            PinningTrustManager.checkServerTrusted.implementation = function () {
-                (globalThis as any). console.log('! Intercepted Appcelerator');
-            };
-    
-            (globalThis as any). console.log('* Setup Appcelerator pinning')
-        } catch (err) {
-            (globalThis as any). console.log('* Unable to hook into Appcelerator pinning')
-        }
-        
-        // ByPass SSL pinning for Android 7+
-        var array_list = Java.use("java.util.ArrayList");
-        var ApiClient = Java.use('com.android.org.conscrypt.TrustManagerImpl');
-        ApiClient.checkTrustedRecursive.implementation = function(a1:any,a2:any,a3:any,a4:any,a5:any,a6:any) {
-            (globalThis as any). console.log('Bypassing SSL Pinning');
-            var k = array_list.$new();
-            return k;
-        }
-    
-        // Force mode debug for all webview
-        var WebView = Java.use('android.webkit.WebView');
-        WebView.loadUrl.overload("java.lang.String").implementation = function (s:any) {
-            (globalThis as any). console.log('Enable webview debug for URL: '+s.toString());
-            this.setWebContentsDebuggingEnabled(true);
-            this.loadUrl.overload("java.lang.String").call(this, s);
-        };
     });
+    
+    // pass our own custom trust manager through when requested
+    var TrustManagers = [TrustManager.$new()];
+    var SSLContext_init = SSLContext.init.overload(
+        '[Ljavax.net.ssl.KeyManager;', '[Ljavax.net.ssl.TrustManager;', 'java.security.SecureRandom'
+    );
+    SSLContext_init.implementation = function (keyManager:any, trustManager:any, secureRandom:any) {
+        (globalThis as any). console.log('! Intercepted trustmanager request');
+        SSLContext_init.call(this, keyManager, TrustManagers, secureRandom);
+    };
+    
+    (globalThis as any). console.log('* Setup custom trust manager');
+    
+    // okhttp3
+    try {
+        var CertificatePinner = Java.use('okhttp3.CertificatePinner');
+        CertificatePinner.check.overload('java.lang.String', 'java.util.List').implementation = function (str:any) {
+            (globalThis as any). console.log('! Intercepted okhttp3: ' + str);
+            return;
+        };
+    
+        (globalThis as any). console.log('* Setup okhttp3 pinning')
+    } catch(err) {
+        (globalThis as any). console.log('* Unable to hook into okhttp3 pinner')
+    }
+    
+    // trustkit
+    try {
+        var Activity = Java.use("com.datatheorem.android.trustkit.pinning.OkHostnameVerifier");
+        Activity.verify.overload('java.lang.String', 'javax.net.ssl.SSLSession').implementation = function (str:any) {
+            (globalThis as any). console.log('! Intercepted trustkit{1}: ' + str);
+            return true;
+        };
+    
+        Activity.verify.overload('java.lang.String', 'java.security.cert.X509Certificate').implementation = function (str:any) {
+            (globalThis as any). console.log('! Intercepted trustkit{2}: ' + str);
+            return true;
+        };
+    
+        (globalThis as any). console.log('* Setup trustkit pinning')
+    } catch(err) {
+        (globalThis as any). console.log('* Unable to hook into trustkit pinner')
+    }
+    
+    // TrustManagerImpl
+    try {
+        var TrustManagerImpl = Java.use('com.android.org.conscrypt.TrustManagerImpl');
+        TrustManagerImpl.verifyChain.implementation = function (untrustedChain:any, trustAnchorChain:any, host:any, clientAuth:any, ocspData:any, tlsSctData:any) {
+            (globalThis as any). console.log('! Intercepted TrustManagerImp: ' + host);
+            return untrustedChain;
+        };
+    
+        (globalThis as any). console.log('* Setup TrustManagerImpl pinning')
+    } catch (err) {
+        (globalThis as any). console.log('* Unable to hook into TrustManagerImpl')
+    }
+    
+    // Appcelerator
+    try {
+        var PinningTrustManager = Java.use('appcelerator.https.PinningTrustManager');
+        PinningTrustManager.checkServerTrusted.implementation = function () {
+            (globalThis as any). console.log('! Intercepted Appcelerator');
+        };
+    
+        (globalThis as any). console.log('* Setup Appcelerator pinning')
+    } catch (err) {
+        (globalThis as any). console.log('* Unable to hook into Appcelerator pinning')
+    }
+    
+    // ByPass SSL pinning for Android 7+
+    var array_list = Java.use("java.util.ArrayList");
+    var ApiClient = Java.use('com.android.org.conscrypt.TrustManagerImpl');
+    ApiClient.checkTrustedRecursive.implementation = function(a1:any,a2:any,a3:any,a4:any,a5:any,a6:any) {
+        (globalThis as any). console.log('Bypassing SSL Pinning');
+        var k = array_list.$new();
+        return k;
+    }
+    
+    // Force mode debug for all webview
+    var WebView = Java.use('android.webkit.WebView');
+    WebView.loadUrl.overload("java.lang.String").implementation = function (s:any) {
+        (globalThis as any). console.log('Enable webview debug for URL: '+s.toString());
+        this.setWebContentsDebuggingEnabled(true);
+        this.loadUrl.overload("java.lang.String").call(this, s);
+    };
 }
 
 
@@ -1621,4 +1621,32 @@ export const autoInputEditTexts = (inputs:{[key:string]:string} = {})=> {
     });
 };
 
+export const getAppVersion = (packageName?:string) => {
+    packageName = packageName || getAndroidAppInfo().packageName;
+    const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
+    try {
+        const packageInfo = context.getPackageManager().getPackageInfo(packageName, 0);
+        const versionName = packageInfo.versionName.value;
+        const versionCode = packageInfo.versionCode.value;
+        return  {versionName, versionCode};
+    } catch (e) {
+        console.error("Failed to get package version:", e);
+    }
 }
+
+export const getAppName = (packageName?:string) => {
+    packageName = packageName || getAndroidAppInfo().packageName;
+    const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
+    try {
+        const packageManager = context.getPackageManager();
+        const applicationInfo = packageManager.getApplicationInfo(packageName, 0);
+        return packageManager.getApplicationLabel(applicationInfo).toString();
+    } catch (e) {
+        console.error("Failed to get app name:", e);
+        return null;
+    }
+}
+
+
+
+// }
