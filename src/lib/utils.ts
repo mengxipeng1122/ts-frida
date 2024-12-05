@@ -1,7 +1,7 @@
 /* internal */
 
 
-// namespace MyFrida {
+namespace MyFrida {
 /**
  * Dump memory contents starting from a given address.
  * 
@@ -1461,4 +1461,4 @@ export function writeFileText(fpath: string, text:string) {
 // }
 
 
-// }
+}

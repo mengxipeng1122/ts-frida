@@ -4,6 +4,7 @@
 # this python script try to convert a object file to a module for frida
 
 import os
+import json
 import sys
 import math
 
@@ -30,13 +31,13 @@ def getAlignNum(addr, align=0x10, shrink=False):
         return addr1
 
 
-def handle_ELF(info, binary, no_content=False):
+def handle_ELF(info, binary, has_content=False):
     """
     Handles ELF information and returns the updated 'info' dictionary.
     Args:
         info (dict): Dictionary containing ELF information.
         binary: The ELF binary object.
-        no_content (bool, optional): Flag to indicate whether to include content in the 'info' dictionary. Defaults to False.
+        has_content (bool, optional): Flag to indicate whether to include content in the 'info' dictionary. Defaults to False. 
     Returns:
         dict: Updated 'info' dictionary.
     """
@@ -60,7 +61,7 @@ def handle_ELF(info, binary, no_content=False):
             'file_offset'       : file_offset     ,
             'size'              : size            ,
             }
-        if not no_content:
+        if has_content:
             l['content_ts']   = ','.join([hex(b) for b in content]);
         info['loads'].append(l)
         sz = getAlignNum(virtual_address+virtual_size, alignment)
@@ -151,7 +152,7 @@ def handle_ELF(info, binary, no_content=False):
                 address = address if isinstance(address, str) else hex(address)
                 code    = f'base.add({address}).writePointer(base.add({offset}));'
             else:
-                code    = f"base.add({hex(address)}).writePointer(MyFrida.resolveSymbol('{sym_name}', libs, syms));"
+                code    = f"base.add({hex(address)}).writePointer(resolveSymbol('{sym_name}', libs, syms));"
         else:
             raise Exception(f'unhandled relocation type {typ}')
         info['patches'].append(code)
@@ -164,13 +165,13 @@ def handle_ELF(info, binary, no_content=False):
 
     return info;
 
-def handle_PE(info, binary, no_content=False):
+def handle_PE(info, binary, has_content=False):
     """
     Handles PE file format.
     Args:
         info (dict): Dictionary to store information about the PE file.
         binary (lief.PE.Binary): PE binary object.
-        no_content (bool, optional): Flag to indicate whether to include the content of each section. Defaults to False.
+        has_content (bool, optional): Flag to indicate whether to include the content of each section. Defaults to False.
     Returns:
         dict: Updated info dictionary.
     """
@@ -192,7 +193,7 @@ def handle_PE(info, binary, no_content=False):
             'file_offset'       : file_offset     ,
             'size'              : size            ,
             }
-        if not no_content:
+        if has_content:
             l['content_ts']           = ','.join([hex(b) for b in content]);
         info['loads'].append(l)
     info['load_size'] = hex(load_size);
@@ -229,7 +230,7 @@ def handle_PE(info, binary, no_content=False):
         for tt,  entry in enumerate(imp.entries):
             address     = entry.iat_address;
             sym_name    = entry.name;
-            code        = f"base.add({hex(address)}).writePointer(MyFrida.resolveSymbol('{sym_name}', libs, syms));"
+            code        = f"base.add({hex(address)}).writePointer(resolveSymbol('{sym_name}', libs, syms));"
             patches.append(code)
     info['patches'] = patches
 
@@ -244,7 +245,8 @@ def main():
     parser.add_argument('-b', "--binary", type=str, required=True, help='path to the binary file')
     parser.add_argument('-o', '--output', default='/tmp/tt.ts', help='path to the output file')
     parser.add_argument('-n', '--name', type=str, help='set module name')
-    parser.add_argument('--no-content', action='store_true', default=False, help='flag to exclude content')
+    parser.add_argument('-c', '--content', action='store_true', default=False, help='flag to include content')
+    parser.add_argument('-m', '--use-ts-frida', action='store_true', default=False, help='whether use ts-frida module')
 
     args = parser.parse_args()
 
@@ -253,7 +255,8 @@ def main():
 
     # Initialize info dictionary
     info = {
-        'no_content'    : args.no_content,
+        'use_ts_frida'  : args.use_ts_frida,
+        'has_content'   : args.content,
         'mode'          : 'load',
         'name'          : args.name or os.path.basename(args.binary),
         'symbols'       : {},
@@ -271,14 +274,14 @@ def main():
     if version.parse(installed_lief_version) < version.parse("0.14.0"):
         # Handle different binary formats
         if binary.format == lief.EXE_FORMATS.PE:
-            info = handle_PE(info, binary, args.no_content)
+            info = handle_PE(info, binary, args.content)
         elif binary.format == lief.EXE_FORMATS.ELF:
-            info = handle_ELF(info, binary, args.no_content)
+            info = handle_ELF(info, binary, args.content)
     else:
         if binary.format == lief.Binary.FORMATS.PE:
-            info = handle_PE(info, binary, args.no_content)
+            info = handle_PE(info, binary, args.content)
         elif binary.format == lief.Binary.FORMATS.ELF:
-            info = handle_ELF(info, binary, args.no_content)
+            info = handle_ELF(info, binary, args.content)
 
     # Get the path of the current module
     module_path = os.path.dirname(os.path.abspath(__file__))

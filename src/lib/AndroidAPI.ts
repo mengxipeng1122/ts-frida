@@ -1,8 +1,6 @@
 
 
-import {dumpMemory} from './utils.js'
-// namespace MyFrida {
-
+namespace MyFrida {
 
 
 const checkAndroidPlatform = ()=>{
@@ -1649,4 +1647,4 @@ export const getAppName = (packageName?:string) => {
 
 
 
-// }
+}
