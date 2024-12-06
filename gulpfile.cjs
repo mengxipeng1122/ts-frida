@@ -57,6 +57,7 @@ gulp.task('copyFiles', function(){
 // Define array of objects for the directories to copy
 const directoriesToMove = [
   { source: './templates/**/*', destination: './dist/templates/' },
+  { source: './src/lib/**/*', destination: './dist/lib/' },
   { source: './src/nativeLib/**/*', destination: './dist/nativeLib/' },
   // Add more directories as needed
 ];
@@ -73,5 +74,5 @@ gulp.task('copyDirectories', done => {
   done();
 });
 
-gulp.task('default', gulp.series('tspc', 'copyFiles', 'copyDirectories', ));
+gulp.task('default', gulp.series( 'copyFiles', 'copyDirectories', ));
 

@@ -5,325 +5,299 @@ namespace  MyFrida {
 
 //////////////////////////////////////////////////
 
-// this object records all runtime info related hook
 /**
- * An object that records all runtime info related to a hook.
- *
- * @typedef {Object} HookActionOpt
- * @property {boolean} hide - If true, the hooked function will be hidden.
- * @property {string} name - The name of the hooked function.
- * @property {number} maxhit - The maximum number of times the hooked function can be called. If -1, there is no limit.
+ * Base options for any hook action
  */
-export type HookActionOpt =  {
+export type HookActionOptions = {
     /**
-     * If true, the hooked function will be hidden.
+     * Whether to hide hook debug output
      */
-    hide        : boolean   ;
+    hideOutput: boolean;
+    
     /**
-     * The name of the hooked function.
-     */
-    name        : string    ;
+     * Name to identify this hook
+     */  
+    hookName: string;
+    
     /**
-     * The maximum number of times the hooked function can be called. If -1, there is no limit.
+     * Maximum number of times hook can be triggered (-1 for unlimited)
      */
-    maxhit      : number    ;
+    maxTriggerCount: number;
 };
 
 /**
- * An abstract class that represents a hook action.
- * It records all runtime info related to a hook.
+ * Base class for all hook actions
+ * Manages hook lifecycle and tracks hook instances
  */
-export abstract class HookAction {
+export abstract class BaseHookAction {
 
     /**
-     * If true, the hooked function will be hidden.
+     * Whether to hide hook debug output
      */
-    hide: boolean = false;
+    hideOutput: boolean = false;
 
     /**
-     * The name of the hooked function.
+     * Name to identify this hook
      */
-    name: string = 'unknown';
+    hookName: string = 'unnamed_hook';
 
     /**
-     * The maximum number of times the hooked function can be called. If -1, there is no limit.
+     * Maximum number of times hook can be triggered (-1 for unlimited) 
      */
-    maxhit: number = -1;
+    maxTriggerCount: number = -1;
 
     /**
-     * The number of times the hooked function has been called.
+     * Current number of times hook has been triggered
      */
-    histCount: number = 0;
+    triggerCount: number = 0;
 
-    // Map to store all instances
-    private static instances: Map<string, HookAction> = new Map<string, HookAction>();
+    // Registry of all hook instances
+    private static hookRegistry: Map<string, BaseHookAction> = new Map<string, BaseHookAction>();
 
     /**
-     * Constructor of the HookAction class.
-     * @param opts An object that contains optional properties for the hook action.
+     * Initialize hook with options
      */
-    protected constructor(opts: Partial<HookActionOpt> = {}) {
-        // Check if the name already exists to prevent duplicates
-        Object.assign(this, opts);
+    protected constructor(options: Partial<HookActionOptions> = {}) {
+        Object.assign(this, options);
     }
 
     /**
-     * Checks if the maximum hit count has been reached.
-     * @returns True if the maximum hit count has been reached, false otherwise.
+     * Check if hook has reached max trigger count
      */
-    protected beyondMaxHit(): boolean {
-        return this.maxhit > 0 && this.histCount > this.maxhit;
+    protected hasReachedMaxTriggers(): boolean {
+        return this.maxTriggerCount > 0 && this.triggerCount >= this.maxTriggerCount;
     }
 
     /**
-     * Increases the hit count of the hooked function.
+     * Increment hook trigger count
      */
-    protected increaseHitCount(): void {
-        if (this.maxhit > 0) {
-            this.histCount++;
+    protected incrementTriggerCount(): void {
+        if (this.maxTriggerCount > 0) {
+            this.triggerCount++;
         }
     }
 
     /**
-     * Retrieves the hook action instance associated with the given address.
-     * @param address The address of the hooked function.
-     * @returns The hook action instance.
-     * @throws Error if the hook action instance is not found.
+     * Get hook instance by address
      */
-    static getInstance(address: NativePointer): HookAction {
-        const found = HookAction.findInstance(address);
-        if (found) return found;
-        throw Error(`can not found hook by ${address}`);
+    static getHook(address: NativePointer): BaseHookAction {
+        const hook = BaseHookAction.findHook(address);
+        if (hook) return hook;
+        throw Error(`No hook found at address ${address}`);
     }
 
     /**
-     * Finds the hook action instance associated with the given address.
-     * @param address The address of the hooked function.
-     * @returns The hook action instance, or undefined if not found.
+     * Find hook instance by address
      */
-    static findInstance(address: NativePointer): HookAction | undefined {
+    static findHook(address: NativePointer): BaseHookAction | undefined {
         const key = address.toString();
-        return this.instances.get(key);
+        return this.hookRegistry.get(key);
     }
 
     /**
-     * Adds a new hook action instance to the map.
-     * @param address The address of the hooked function.
-     * @param instance The hook action instance.
-     * @throws Error if an instance with the same address already exists.
+     * Register new hook instance
      */
-    static addInstance(address: NativePointer, instance: HookAction): void {
+    static registerHook(address: NativePointer, hook: BaseHookAction): void {
         const key = address.toString();
-        if (HookAction.instances.has(key)) {
-            throw new Error(`An instance with the address "${key}" already exists.`);
+        if (BaseHookAction.hookRegistry.has(key)) {
+            throw new Error(`Hook already exists at address "${key}"`);
         }
-        // Add the new instance to the map with the name as the key
-        instance.hook(address);
-        HookAction.instances.set(key, instance);
+        hook.install(address);
+        BaseHookAction.hookRegistry.set(key, hook);
     }
 
     /**
-     * Removes the hook action instance associated with the given address from the map.
-     * @param address The address of the hooked function.
-     * @returns True if the instance was removed successfully, false otherwise.
+     * Remove hook instance
      */
-    static removeInstance(address: NativePointer): boolean {
-        const instance = HookAction.getInstance(address);
-        instance.unhook();
+    static removeHook(address: NativePointer): boolean {
+        const hook = BaseHookAction.getHook(address);
+        hook.uninstall();
         const key = address.toString();
-        return this.instances.delete(key);
+        return this.hookRegistry.delete(key);
     }
 
     /**
-     * Returns an array of all hook action instances.
-     * @returns An array of hook action instance names.
+     * List all registered hook addresses
      */
-    static listInstances(): string[] {
-        return Array.from(this.instances.keys());
+    static listHooks(): string[] {
+        return Array.from(this.hookRegistry.keys());
     }
 
     /**
-     * Removes all hook action instances from the map.
+     * Remove all hooks
      */
-    static removeAllInstances(): void {
-        this.instances.forEach((instance, key) => instance.unhook());
-        this.instances.clear();
+    static removeAllHooks(): void {
+        this.hookRegistry.forEach((hook, key) => hook.uninstall());
+        this.hookRegistry.clear();
     }
 
     /**
-     * Hooks the function at the given address.
-     * @param address The address of the function to hook.
+     * Install hook at address
      */
-    abstract hook(address: NativePointer): void;
+    abstract install(address: NativePointer): void;
 
     /**
-     * Unhooks the function at the given address.
+     * Remove hook
      */
-    abstract unhook(): void;
+    abstract uninstall(): void;
 
 };
-type HookEnterFunType = (args:NativePointer[], tstr:string, thiz:InvocationContext )=>void;
-type HookLeaveFunType = (retval:NativePointer, tstr:string, thiz:InvocationContext )=>NativePointer|void;
 
-type HookFunActionOpt =  {
-    enterFun        : HookEnterFunType,
-    leaveFun        : HookLeaveFunType,
-    showCallStack   : boolean,
-    showParaMemory  : boolean,
-    checkMemory     : boolean,
-    nparas          : number, 
-    scopes          : string[],
+type FunctionEnterCallback = (args: NativePointer[], indentStr: string, ctx: InvocationContext) => void;
+type FunctionLeaveCallback = (retval: NativePointer, indentStr: string, ctx: InvocationContext) => NativePointer | void;
+
+type FunctionHookOptions = {
+    onEnterFunction: FunctionEnterCallback,
+    onLeaveFunction: FunctionLeaveCallback,
+    showParameterMemory: boolean,
+    validateMemoryAccess: boolean, 
+    parameterCount: number,
+    allowedScopes: string[],
+    /**
+     * Whether to show callstack on hook
+     */
+    showCallstack: boolean;
 };
 
-export type HookFunActionOptArgs =  Partial<HookActionOpt> & Partial<HookFunActionOpt>;
+export type FunctionHookActionOptions = Partial<HookActionOptions> & Partial<FunctionHookOptions>;
 
 /**
- * Class representing a hook action for a function.
- * @extends HookAction
+ * Hook for intercepting function calls
  */
-export class HookFunAction extends HookAction {
+export class FunctionHookAction extends BaseHookAction {
 
     /**
-     * Function to be called when the function is entered.
+     * Callback when entering function
      */
-    enterFun: HookEnterFunType = function(args, tstr, thiz) {};
+    onEnterFunction: FunctionEnterCallback = function(args, indentStr, ctx) {};
 
     /**
-     * Function to be called when the function is left.
+     * Callback when leaving function
      */
-    leaveFun: HookLeaveFunType = function(retval, tstr, thiz) {};
+    onLeaveFunction: FunctionLeaveCallback = function(retval, indentStr, ctx) {};
 
     /**
-     * Whether to show the function call stack.
+     * Whether to dump parameter memory
      */
-    showCallStack: boolean = false;
+    showParameterMemory: boolean = false;
 
     /**
-     * Whether to show the parameter memory.
+     * Whether to validate memory access
      */
-    showParaMemory: boolean = false;
+    validateMemoryAccess: boolean = false;
 
     /**
-     * Whether to check the memory.
+     * Number of parameters to intercept
      */
-    checkMemory: boolean = false;
+    parameterCount: number = 4;
 
     /**
-     * Number of parameters.
+     * Scopes where hook is active
      */
-    nparas: number = 4;
+    allowedScopes: string[] = [];
 
     /**
-     * Function scopes.
-     */
-    scopes: string[] = [];
-
-    /**
-     * The invocation listener.
+     * Frida listener
      */
     listener?: InvocationListener;
 
     /**
-     * Whether the function is running.
+     * Whether hook is currently executing
      */
-    running: boolean = false;
+    isExecuting: boolean = false;
 
     /**
-     * The invocation context.
+     * Current invocation context
      */
-    context?: InvocationContext;
+    invocationContext?: InvocationContext;
+
+    showCallstack: boolean = false;
 
     /**
-     * The static level of the function.
+     * Current function call depth
      */
-    private static level: number = 0;
+    private static callDepth: number = 0;
 
     /**
-     * The static function stack.
+     * Call stack of function names
      */
-    private static funStack: string[] = [];
+    private static functionStack: string[] = [];
 
     /**
-     * Gets the string representation of the static level.
-     * @returns The string representation of the static level.
+     * Get indentation string for current depth
      */
-    static getLevelStr(): string {
-        const cnt = Math.max(this.level, 0);
-        return '  '.repeat(cnt);
+    static getIndentString(): string {
+        const depth = Math.max(this.callDepth, 0);
+        return '  '.repeat(depth);
     }
 
     /**
-     * Creates an instance of HookFunAction.
-     * @param {HookFunActionOptArgs} opts - The options for the hook action.
+     * Initialize function hook
      */
-    constructor(opts: HookFunActionOptArgs = {}) {
-        super(opts as Partial<HookActionOpt>);
-        Object.assign(this, opts as Partial<HookFunActionOpt>);
+    constructor(options: FunctionHookActionOptions = {}) {
+        super(options as Partial<HookActionOptions>);
+        Object.assign(this, options as Partial<FunctionHookOptions>);
     }
 
     /**
-     * Checks if the function is in the scopes.
-     * @returns True if the function is in the scopes, false otherwise.
+     * Check if hook is in allowed scope
      */
-    isInScopes(): boolean {
-        if (this.scopes.length === 0) {
+    isInAllowedScope(): boolean {
+        if (this.allowedScopes.length === 0) {
             return true;
         }
-        return this.scopes.some(scope => HookFunAction.funStack.includes(scope));
+        return this.allowedScopes.some(scope => FunctionHookAction.functionStack.includes(scope));
     }
 
     /**
-     * Hooks the function at the given address.
-     * @param {NativePointer} address - The address of the function to hook.
+     * Install hook at function address
      */
-    hook(address: NativePointer): void {
+    install(address: NativePointer): void {
         let {
-            nparas,
-            hide,
-            showCallStack,
-            showParaMemory,
-            checkMemory,
-            maxhit,
-            enterFun,
-            leaveFun,
-            name
+            parameterCount,
+            hideOutput,
+            showCallstack,
+            showParameterMemory,
+            validateMemoryAccess,
+            onEnterFunction,
+            onLeaveFunction,
+            hookName
         } = this;
-        let hitcount = 0;
-        const thiz = this;
+        const self = this;
 
-        // Function to be called when the function is entered
-        let showEnter = function(args: NativePointer[], tstr: string, thiz: InvocationContext) {
-            let targs: string[] = [];
-            for (let t = 0; t < nparas; t++) {
-                targs.push(args[t].toString());
+        // Log function entry
+        let logEnter = function(args: NativePointer[], indentStr: string, ctx: InvocationContext) {
+            let argStrings: string[] = [];
+            for (let i = 0; i < parameterCount; i++) {
+                argStrings.push(args[i].toString());
             }
-            ( globalThis as any ). console .log(tstr, 'enter', JSON.stringify(name), ' (', targs.join(','), ')');
+            ( globalThis as any ). console .log(indentStr, 'enter', JSON.stringify(hookName), ' (', argStrings.join(','), ')');
         };
 
-        // Function to be called when the function is left
-        let showLeave = function(retval: NativePointer, tstr: string, thiz: InvocationContext) {
-            ( globalThis as any ). console .log(HookFunAction.getLevelStr(), 'leave', JSON.stringify(name), retval);
+        // Log function exit
+        let logExit = function(retval: NativePointer, indentStr: string, ctx: InvocationContext) {
+            ( globalThis as any ). console .log(FunctionHookAction.getIndentString(), 'leave', JSON.stringify(hookName), retval);
         }
 
-        // Attach an interceptor to the function
+        // Install Frida interceptor
         this.listener = Interceptor.attach(address, {
             onEnter: function (args: NativePointer[]) {
-                if (thiz.beyondMaxHit()) return;
-                HookFunAction.level++;
-                thiz.running = true;
-                if (thiz.isInScopes()) {
-                    HookFunAction.funStack.push(name);
-                    for (let i = 0; i < nparas; i++) {
+                if (self.hasReachedMaxTriggers()) return;
+                FunctionHookAction.callDepth++;
+                self.isExecuting = true;
+                if (self.isInAllowedScope()) {
+                    FunctionHookAction.functionStack.push(hookName);
+                    for (let i = 0; i < parameterCount; i++) {
                         this['args' + i] = args[i];
                     }
 
-                    this.showFun = showEnter;
-                    if (!hide) {
-                        showEnter(args, HookFunAction.getLevelStr(), this);
-                        if (showParaMemory) {
-                            for (let i = 0; i < nparas; i++) {
+                    this.showFun = logEnter;
+                    if (!hideOutput) {
+                        logEnter(args, FunctionHookAction.getIndentString(), this);
+                        if (showParameterMemory) {
+                            for (let i = 0; i < parameterCount; i++) {
                                 let param = args[i];
-                                if (checkMemory) {
+                                if (validateMemoryAccess) {
                                     let range = Process.findRangeByAddress(param);
                                     if (range) {
                                         dumpMemory(param);
@@ -333,45 +307,121 @@ export class HookFunAction extends HookAction {
                                 }
                             }
                         }
-                        if (showCallStack) {
+                        if (showCallstack) {
                             showBacktrace(this);
                         }
                     }
-                    if (enterFun) enterFun(args, HookFunAction.getLevelStr(), this);
-                    thiz.context = this;
+                    if (onEnterFunction) onEnterFunction(args, FunctionHookAction.getIndentString(), this);
+                    self.invocationContext = this;
                 }
             },
             onLeave: function (retval) {
-                delete thiz.context;
-                let isInScopes = thiz.isInScopes();
-                thiz.running = false;
-                if (thiz.beyondMaxHit()) return;
-                if (isInScopes) {
-                    if (!hide) { showLeave(retval, HookFunAction.getLevelStr(), this); }
-                    this.showFun = showLeave;
-                    if (leaveFun) {
-                        let ret = leaveFun(retval, HookFunAction.getLevelStr(), this);
+                delete self.invocationContext;
+                let isInScope = self.isInAllowedScope();
+                self.isExecuting = false;
+                if (self.hasReachedMaxTriggers()) return;
+                if (isInScope) {
+                    if (!hideOutput) { logExit(retval, FunctionHookAction.getIndentString(), this); }
+                    this.showFun = logExit;
+                    if (onLeaveFunction) {
+                        let ret = onLeaveFunction(retval, FunctionHookAction.getIndentString(), this);
                         if (ret != undefined) { retval.replace(ret); }
                     }
-                    HookFunAction.funStack.pop();
+                    FunctionHookAction.functionStack.pop();
                 }
-                HookFunAction.level--;
-                thiz.increaseHitCount();
+                FunctionHookAction.callDepth--;
+                self.incrementTriggerCount();
             },
         });
     }
 
     /**
-     * Unhooks the function.
+     * Remove hook
      */
-    unhook(): void {
+    uninstall(): void {
         if (this.listener != undefined) {
             this.listener.detach();
         }
     }
 };
 
+type InlineHookCallback = (stackPointer: NativePointer, parameter: NativePointer) => void;
+type PatchGeneratorCallback = (trampolineAddress: NativePointer, hooker: InlineHooker) => [number, ArrayBuffer];
 
+type InlineHookOptions = {
+    hookCallback?: InlineHookCallback,
+    trampolineAddress: NativePointer;
+    hookParameter: NativePointer;
+    patchGenerator?: PatchGeneratorCallback;
+};
+
+export type InlineHookActionOptions = Partial<HookActionOptions> & Partial<InlineHookOptions>;
+
+/**
+ * Hook for intercepting arbitrary instructions
+ */
+export class InlineHookAction extends BaseHookAction {
+
+    hooker?: InlineHooker;
+    hookCallback?: InlineHookCallback;
+    trampolineAddress?: NativePointer;
+    hookParameter?: NativePointer;
+    patchGenerator?: CUSTOM_PATCHER;
+
+    constructor(options: InlineHookActionOptions = {}) {
+        super(options as Partial<HookActionOptions>);
+        Object.assign(this, options as Partial<InlineHookOptions>);
+    }
+
+    getTrampolineSize(): number {
+        return this.hooker?.trampolineSize ?? 0;
+    }
+
+    install(address: NativePointer): void {
+
+        const {
+            hookCallback,
+            trampolineAddress,
+            hookParameter,
+            patchGenerator: customePatcher
+        } = this;
+
+        if(hookParameter==undefined) throw Error('Hook parameter is required');
+        const self = this;
+        const callback = new NativeCallback(function (stackPointer: NativePointer, parameter: NativePointer,) {
+            if (self.hasReachedMaxTriggers()) return;
+            if (!self.hideOutput) {
+                console.log(address, 'triggered',)
+            }
+            if(hookCallback) hookCallback(stackPointer, parameter);
+        }, 'void', ['pointer', 'pointer']);
+
+        this.hooker = inlineHookerFactory(
+            address,
+            callback,
+            hookParameter,
+            trampolineAddress,
+            customePatcher
+        );
+        if(this.hooker==undefined) throw Error('Failed to create inline hooker');
+        let {size:trampolineSize, originalBytes, debugInfo} = this.hooker.install();
+        console.log(`Trampoline size: ${trampolineSize}`)
+        console.log(`Original bytes: ${originalBytes}`)
+        console.log(`Debug info: ${debugInfo}`)
+    }
+
+    /**
+     * Remove hook
+     */
+    uninstall(): void {
+        if(this.hooker==undefined) throw Error('No hooker installed');
+        InlineHooker.restore(this.hooker.targetAddress);
+    }
+
+};
+
+//////////////////////////////////////////////////
+// utils functions
 /**
  * Hooks the dlopen function to wait for the specified library to be loaded.
  * @param soname The name of the library to wait for.

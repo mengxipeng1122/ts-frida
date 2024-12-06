@@ -2,6 +2,7 @@
 
 
 namespace MyFrida {
+
 /**
  * Dump memory contents starting from a given address.
  * 
